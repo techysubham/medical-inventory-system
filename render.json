@@ -1,0 +1,11 @@
+{
+  "services": [
+    {
+      "name": "medical-inventory-backend",
+      "env": "node",
+      "plan": "free",
+      "startCommand": "node backend/src/server.js",
+      "buildCommand": "npm install --prefix backend"
+    }
+  ]
+}
