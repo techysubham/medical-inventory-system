@@ -63,9 +63,23 @@ app.get('/', (req, res) => {
     health: '/health'
   });
 });
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
+// API index - returns available endpoints (helps Vercel probe `/api`)
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'Medical Inventory API',
+    endpoints: [
+      '/api/auth',
+      '/api/inventory',
+      '/api/discounts',
+      '/api/invoices',
+      '/api/suppliers',
+      '/api/purchase-orders',
+      '/api/alerts',
+      '/api/reports',
+      '/api/settings',
+      '/health'
+    ]
+  });
 });
 
 // Error handler
