@@ -29,7 +29,21 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
+// Configure CORS with a dynamic allowlist. This accepts requests from the
+// frontend URL set in `FRONTEND_URL` (e.g. your Vercel domain) and localhost
+// during development. It also allows non-browser requests with no origin.
+const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173'].filter(Boolean);
+console.log('Allowed CORS origins:', allowedOrigins);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // allow server-to-server or curl requests
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error('CORS policy: Origin not allowed'), false);
+    },
+    credentials: true,
+  })
+);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
