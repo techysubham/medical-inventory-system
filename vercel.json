@@ -4,6 +4,6 @@
   "installCommand": "npm install",
   "framework": "vite",
   "env": {
-    "VITE_API_URL": "https://medical-inventory-system-m96a.onrender.com/api"
+    "VITE_API_URL": "https://medical-inventory-system-m96a.onrender.com"
   }
 }
