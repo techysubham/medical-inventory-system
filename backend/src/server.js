@@ -29,20 +29,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-// Configure CORS with a dynamic allowlist. This accepts requests from the
-// frontend URL set in `FRONTEND_URL` (e.g. your Vercel domain) and localhost
-// during development. It also allows non-browser requests with no origin.
-const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173'].filter(Boolean);
-console.log('Allowed CORS origins:', allowedOrigins);
+// Configure CORS with a dynamic allowlist. Accepts `FRONTEND_URL` and localhost.
+// Normalize origins by stripping trailing slashes so values like
+// 'https://example.vercel.app' and 'https://example.vercel.app/' match.
+const rawAllowed = [process.env.FRONTEND_URL, 'http://localhost:5173'].filter(Boolean);
+const normalize = (u) => (typeof u === 'string' ? u.replace(/\/+$|\/$/g, '') : u);
+const allowedOrigins = Array.from(new Set(rawAllowed.map(normalize)));
+console.log('Allowed CORS raw:', rawAllowed, 'normalized:', allowedOrigins);
 app.use(
   cors({
     origin: (origin, callback) => {
-        console.log('CORS check - incoming origin:', origin);
-        console.log('CORS check - FRONTEND_URL env:', process.env.FRONTEND_URL);
-        if (!origin) return callback(null, true); // allow server-to-server or curl requests
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-        console.error('CORS policy: Origin not allowed', { origin, allowedOrigins });
-        callback(new Error('CORS policy: Origin not allowed'), false);
+      console.log('CORS check - incoming origin:', origin);
+      console.log('CORS check - FRONTEND_URL env:', process.env.FRONTEND_URL);
+      if (!origin) return callback(null, true); // allow server-to-server or curl requests
+      const incoming = normalize(origin);
+      if (allowedOrigins.includes(incoming)) return callback(null, true);
+      console.error('CORS policy: Origin not allowed', { origin, incoming, allowedOrigins });
+      callback(new Error('CORS policy: Origin not allowed'), false);
     },
     credentials: true,
   })
