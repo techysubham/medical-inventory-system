@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Edit2, Trash2, X } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const normalizedBase = rawApi.replace(/\/+$/g, '');
+const API_URL = normalizedBase.endsWith('/api') ? normalizedBase : normalizedBase + '/api';
 
 interface Supplier {
   _id: string;
