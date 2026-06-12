@@ -381,11 +381,24 @@ export function InvoiceGeneration() {
 
             <div className="p-6 printable-area" style={{background: 'white'}}>
               <style>{`
+                @page { size: A4 portrait; margin: 10mm; }
                 @media print {
-                  body * { visibility: hidden; }
-                  .printable-area, .printable-area * { visibility: visible; }
-                  .printable-area { position: absolute; left: 0; top: 0; width: 100%; }
+                  /* Hide everything except printable area */
+                  body * { visibility: hidden !important; }
+                  .printable-area, .printable-area * { visibility: visible !important; }
+                  .printable-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
+
+                  /* Prevent table rows splitting across pages */
+                  table { page-break-inside: auto !important; }
+                  tr    { page-break-inside: avoid !important; page-break-after: auto !important; }
+                  thead { display: table-header-group !important; }
+                  tfoot { display: table-footer-group !important; }
+
+                  /* Reduce padding/spacing to help fit on single page when possible */
+                  .printable-area { font-size: 12px; }
+                  .invoice-table th, .invoice-table td { padding: 4px 6px; border: 1px solid #ddd; }
                 }
+                /* default on-screen styles */
                 .invoice-table th, .invoice-table td { padding: 6px 8px; border: 1px solid #ddd; }
               `}</style>
 
