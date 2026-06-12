@@ -21,6 +21,8 @@ const appSettingsSchema = new mongoose.Schema(
     lowStockThreshold: { type: Number, default: 20 },
     lowStockStripThreshold: { type: Number, default: 200 },
     expiryWarningDays: { type: Number, default: 30 },
+    // How often (in minutes) the alert detectors run. Default: 30 minutes
+    alertSchedulerIntervalMinutes: { type: Number, default: 30 },
     defaultDiscount: { type: Number, default: 0 },
   },
   { timestamps: true }

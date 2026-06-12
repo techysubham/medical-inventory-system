@@ -58,6 +58,32 @@ router.post('/cartons/:cartonId/boxes', authenticate, async (req, res) => {
   }
 });
 
+// Bulk create boxes in a carton (insertMany) to avoid N sequential requests
+router.post('/cartons/:cartonId/boxes/bulk', authenticate, async (req, res) => {
+  try {
+    const boxes = Array.isArray(req.body) ? req.body : req.body.boxes;
+    if (!Array.isArray(boxes) || boxes.length === 0) {
+      return res.status(400).json({ error: 'Boxes array required' });
+    }
+
+    // Attach cartonId to each box
+    const toInsert = boxes.map((b) => ({ ...b, cartonId: req.params.cartonId }));
+
+    // Use insertMany for performance
+    const inserted = await StockBox.insertMany(toInsert);
+
+    // Recalculate item quantity once
+    const carton = await StockCarton.findById(req.params.cartonId);
+    if (carton) {
+      await recalcItemQuantity(carton.itemId);
+    }
+
+    res.status(201).json(inserted);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // Delete carton
 router.delete('/cartons/:cartonId', authenticate, async (req, res) => {
   try {
@@ -117,6 +143,71 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
+// Batch create multiple cartoons with boxes per carton (specific route first)
+router.post('/:itemId/cartons/batch', authenticate, async (req, res) => {
+  try {
+    const { numberOfCartoons, numberOfBoxesPerCarton, stripsPerBox, purchasePrice, supplierId, receivedDate, expirationDate, notes } = req.body;
+    
+    if (!numberOfCartoons || !numberOfBoxesPerCarton || !stripsPerBox) {
+      return res.status(400).json({ error: 'numberOfCartoons, numberOfBoxesPerCarton, and stripsPerBox are required' });
+    }
+
+    const itemId = req.params.itemId;
+    const createdCartons = [];
+    let allBoxesToInsert = [];
+
+    // Get the highest existing carton number for this item
+    const lastCarton = await StockCarton.findOne({ itemId }).sort({ cartonNumber: -1 });
+    let nextCartonNum = lastCarton ? parseInt(lastCarton.cartonNumber) + 1 : 1;
+
+    // Create cartoons and collect boxes
+    for (let c = 0; c < numberOfCartoons; c++) {
+      const cartonData = {
+        itemId,
+        cartonNumber: (nextCartonNum + c).toString(),
+        quantityOfBoxes: numberOfBoxesPerCarton,
+        purchasePrice,
+        supplierId: supplierId || undefined,
+        receivedDate: receivedDate ? new Date(receivedDate) : new Date(),
+        expirationDate: expirationDate ? new Date(expirationDate) : undefined,
+        notes: notes || undefined,
+        status: 'active',
+      };
+      const carton = new StockCarton(cartonData);
+      await carton.save();
+      createdCartons.push(carton);
+
+      // Build boxes for this carton
+      for (let b = 1; b <= numberOfBoxesPerCarton; b++) {
+        allBoxesToInsert.push({
+          cartonId: carton._id,
+          boxNumber: b,
+          stripsPerBox,
+          totalStrips: stripsPerBox,
+          availableStrips: stripsPerBox,
+        });
+      }
+    }
+
+    // Bulk insert all boxes
+    if (allBoxesToInsert.length > 0) {
+      await StockBox.insertMany(allBoxesToInsert);
+    }
+
+    // Recalculate item quantity once
+    await recalcItemQuantity(itemId);
+
+    res.status(201).json({
+      message: `Created ${numberOfCartoons} carton(s) with ${numberOfBoxesPerCarton} boxes each`,
+      cartoons: createdCartons,
+      totalBoxes: allBoxesToInsert.length,
+      totalStrips: numberOfCartoons * numberOfBoxesPerCarton * stripsPerBox,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // Get cartons for an item
 router.get('/:itemId/cartons', authenticate, async (req, res) => {
   try {
@@ -127,7 +218,7 @@ router.get('/:itemId/cartons', authenticate, async (req, res) => {
   }
 });
 
-// Create carton
+// Create single carton
 router.post('/:itemId/cartons', authenticate, async (req, res) => {
   try {
     const carton = new StockCarton({ ...req.body, itemId: req.params.itemId });

@@ -3,7 +3,9 @@ import PurchaseOrder from '../models/PurchaseOrder.js';
 import Alert from '../models/Alert.js';
 import { AppSettings } from '../models/Settings.js';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
 
 async function getSettings() {
   try {
@@ -72,12 +74,23 @@ export async function runDetectors() {
 }
 
 let _interval = null;
-export function startScheduler(freqMs = DAY_MS) {
-  // Run immediately, then schedule
-  runDetectors();
-  if (_interval) clearInterval(_interval);
-  _interval = setInterval(() => runDetectors(), freqMs);
-  console.log('Alert detector scheduler started; interval ms=', freqMs);
+export async function startScheduler(freqMs) {
+  try {
+    // If no frequency passed, read from AppSettings (minutes)
+    if (typeof freqMs === 'undefined' || freqMs === null) {
+      const s = await AppSettings.findOne();
+      const minutes = (s && s.alertSchedulerIntervalMinutes) ? s.alertSchedulerIntervalMinutes : 30;
+      freqMs = minutes * MINUTE_MS;
+    }
+
+    // Run immediately, then schedule
+    await runDetectors();
+    if (_interval) clearInterval(_interval);
+    _interval = setInterval(() => runDetectors(), freqMs);
+    console.log('Alert detector scheduler started; interval ms=', freqMs);
+  } catch (err) {
+    console.error('Failed to start scheduler with freqMs=', freqMs, err);
+  }
 }
 
 export function stopScheduler() {

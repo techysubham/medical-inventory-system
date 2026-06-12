@@ -76,8 +76,8 @@ export function InventoryManagement() {
   });
 
   const [cartonData, setCartonData] = useState({
-    cartonNumber: '',
-    quantityOfBoxes: 0,
+    numberOfCartoons: 1,
+    numberOfBoxesPerCarton: 1,
     stripsPerBox: 0,
     purchasePrice: 0,
     expirationDate: '',
@@ -231,44 +231,35 @@ export function InventoryManagement() {
   const handleAddCarton = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedItemId || !cartonData.cartonNumber) {
-      alert('Please fill in required fields');
+    if (!selectedItemId || !cartonData.numberOfCartoons || !cartonData.numberOfBoxesPerCarton || !cartonData.stripsPerBox) {
+      alert('Please fill in all required fields');
       return;
     }
 
     try {
-      const response = await fetch(`${API_URL}/inventory/${selectedItemId}/cartons`, {
+      const batchData = {
+        numberOfCartoons: parseInt(cartonData.numberOfCartoons.toString()),
+        numberOfBoxesPerCarton: parseInt(cartonData.numberOfBoxesPerCarton.toString()),
+        stripsPerBox: parseInt(cartonData.stripsPerBox.toString()),
+        purchasePrice: parseFloat(cartonData.purchasePrice.toString()),
+        receivedDate: new Date().toISOString().split('T')[0],
+        expirationDate: cartonData.expirationDate || undefined,
+      };
+
+      const response = await fetch(`${API_URL}/inventory/${selectedItemId}/cartons/batch`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(cartonData),
+        body: JSON.stringify(batchData),
       });
 
-      if (!response.ok) throw new Error('Failed to create carton');
+      if (!response.ok) throw new Error('Failed to create cartoons');
+      const result = await response.json();
 
-      const carton = await response.json();
-
-      // Calculate total strips and add boxes
-      const totalStrips = cartonData.quantityOfBoxes * cartonData.stripsPerBox;
-      const stripsPerBox = cartonData.stripsPerBox;
-
-      for (let i = 1; i <= cartonData.quantityOfBoxes; i++) {
-        await fetch(`${API_URL}/inventory/cartons/${carton._id}/boxes`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            boxNumber: i,
-            stripsPerBox,
-            totalStrips: stripsPerBox,
-            availableStrips: stripsPerBox,
-          }),
-        });
-      }
-
-      alert(`Carton created with ${cartonData.quantityOfBoxes} boxes (${totalStrips} total strips)`);
+      alert(`${result.totalBoxes} boxes created across ${result.message.split('Created ')[1].split(' carton')[0]} cartons (${result.totalStrips} total strips)`);
       setShowCartonModal(false);
       setCartonData({
-        cartonNumber: '',
-        quantityOfBoxes: 0,
+        numberOfCartoons: 1,
+        numberOfBoxesPerCarton: 1,
         stripsPerBox: 0,
         purchasePrice: 0,
         expirationDate: '',
@@ -278,7 +269,7 @@ export function InventoryManagement() {
       if (selectedItemId) fetchCartons(selectedItemId);
     } catch (error) {
       console.error('Error:', error);
-      alert('Error creating carton: ' + (error as Error).message);
+      alert('Error creating cartons: ' + (error as Error).message);
     }
   };
 
@@ -655,26 +646,37 @@ export function InventoryManagement() {
               </button>
             </div>
             <form onSubmit={handleAddCarton} className="p-6 space-y-4">
+              <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                <p className="text-sm text-blue-900">
+                  {cartonData.numberOfCartoons} Carton(s) × {cartonData.numberOfBoxesPerCarton} Boxes per Carton × {cartonData.stripsPerBox} Strips per Box =
+                  <strong className="ml-1">
+                    {parseInt(cartonData.numberOfCartoons.toString()) * parseInt(cartonData.numberOfBoxesPerCarton.toString()) * parseInt(cartonData.stripsPerBox.toString())} Total Strips
+                  </strong>
+                </p>
+              </div>
               <input
-                type="text"
-                value={cartonData.cartonNumber}
-                onChange={(e) => setCartonData({ ...cartonData, cartonNumber: e.target.value })}
-                placeholder="Carton Number *"
+                type="number"
+                min="1"
+                value={cartonData.numberOfCartoons}
+                onChange={(e) => setCartonData({ ...cartonData, numberOfCartoons: parseInt(e.target.value) || 1 })}
+                placeholder="Number of Cartoons *"
                 className="w-full px-3 py-2 border rounded-lg"
                 required
               />
               <input
                 type="number"
-                value={cartonData.quantityOfBoxes}
-                onChange={(e) => setCartonData({ ...cartonData, quantityOfBoxes: parseInt(e.target.value) })}
-                placeholder="Number of Boxes *"
+                min="1"
+                value={cartonData.numberOfBoxesPerCarton}
+                onChange={(e) => setCartonData({ ...cartonData, numberOfBoxesPerCarton: parseInt(e.target.value) || 1 })}
+                placeholder="Number of Boxes per Carton *"
                 className="w-full px-3 py-2 border rounded-lg"
                 required
               />
               <input
                 type="number"
+                min="1"
                 value={cartonData.stripsPerBox}
-                onChange={(e) => setCartonData({ ...cartonData, stripsPerBox: parseInt(e.target.value) })}
+                onChange={(e) => setCartonData({ ...cartonData, stripsPerBox: parseInt(e.target.value) || 1 })}
                 placeholder="Strips per Box *"
                 className="w-full px-3 py-2 border rounded-lg"
                 required
@@ -684,7 +686,7 @@ export function InventoryManagement() {
                 step="0.01"
                 value={cartonData.purchasePrice}
                 onChange={(e) => setCartonData({ ...cartonData, purchasePrice: parseFloat(e.target.value) })}
-                placeholder="Purchase Price"
+                placeholder="Purchase Price per Carton"
                 className="w-full px-3 py-2 border rounded-lg"
               />
               <input
@@ -695,20 +697,12 @@ export function InventoryManagement() {
                 className="w-full px-3 py-2 border rounded-lg"
               />
 
-              {cartonData.quantityOfBoxes > 0 && cartonData.stripsPerBox > 0 && (
-                <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                  <p className="text-sm text-blue-900">
-                    Total Strips: <strong>{cartonData.quantityOfBoxes * cartonData.stripsPerBox}</strong>
-                  </p>
-                </div>
-              )}
-
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <button type="button" onClick={() => setShowCartonModal(false)} className="px-4 py-2 border rounded-lg">
                   Cancel
                 </button>
                 <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                  Add Carton
+                  Add Cartoons
                 </button>
               </div>
             </form>

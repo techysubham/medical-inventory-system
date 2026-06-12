@@ -14,6 +14,7 @@ interface AppSettings {
   maintenanceMode: boolean;
   lowStockStripThreshold?: number;
   expiryWarningDays?: number;
+  alertSchedulerIntervalMinutes?: number;
 }
 
 export function SettingsManagement() {
@@ -26,6 +27,7 @@ export function SettingsManagement() {
     maintenanceMode: false,
     lowStockStripThreshold: 200,
     expiryWarningDays: 30,
+    alertSchedulerIntervalMinutes: 30,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -185,6 +187,21 @@ export function SettingsManagement() {
                 disabled={!hasPermission('manage_settings')}
               />
               <p className="text-xs text-gray-500 mt-1">Alert if expiry is within this many days</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Alert Check Interval (minutes)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="1440"
+                value={settings.alertSchedulerIntervalMinutes || 30}
+                onChange={(e) => setSettings({ ...settings, alertSchedulerIntervalMinutes: parseInt(e.target.value) })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                disabled={!hasPermission('manage_settings')}
+              />
+              <p className="text-xs text-gray-500 mt-1">How often alert detectors run (minutes)</p>
             </div>
           </div>
         </div>
