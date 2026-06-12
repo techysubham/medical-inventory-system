@@ -55,6 +55,14 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Root info - return a brief message so the primary URL is not a 404
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Medical Inventory API',
+    docs: '/api',
+    health: '/health'
+  });
+});
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
