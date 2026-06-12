@@ -37,9 +37,12 @@ console.log('Allowed CORS origins:', allowedOrigins);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // allow server-to-server or curl requests
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      callback(new Error('CORS policy: Origin not allowed'), false);
+        console.log('CORS check - incoming origin:', origin);
+        console.log('CORS check - FRONTEND_URL env:', process.env.FRONTEND_URL);
+        if (!origin) return callback(null, true); // allow server-to-server or curl requests
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        console.error('CORS policy: Origin not allowed', { origin, allowedOrigins });
+        callback(new Error('CORS policy: Origin not allowed'), false);
     },
     credentials: true,
   })
