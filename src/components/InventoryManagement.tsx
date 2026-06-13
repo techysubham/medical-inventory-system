@@ -295,6 +295,14 @@ export function InventoryManagement() {
     setEditingItem(item);
     // determine existing medicine discount if any
     const existingMd = medicineDiscounts.find((m) => m.itemId && (m.itemId._id ? m.itemId._id === item._id : m.itemId === item._id));
+    
+    // Format expiration date: convert ISO format to YYYY-MM-DD for input type="date"
+    let formattedExpiry = '';
+    if (item.expirationDate) {
+      const date = new Date(item.expirationDate);
+      formattedExpiry = date.toISOString().split('T')[0]; // Extract YYYY-MM-DD
+    }
+    
     setFormData({
       sku: item.sku,
       name: item.name,
@@ -304,7 +312,7 @@ export function InventoryManagement() {
       unitCost: item.unitCost,
       sellingPrice: item.sellingPrice,
       requiresPrescription: item.requiresPrescription,
-      expirationDate: item.expirationDate || '',
+      expirationDate: formattedExpiry,
       status: item.status,
       discountTierId: existingMd && existingMd.discountTierId ? (existingMd.discountTierId._id || existingMd.discountTierId) : '',
     });
@@ -532,49 +540,59 @@ export function InventoryManagement() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  placeholder="SKU *"
-                  className="px-3 py-2 border rounded-lg"
-                  required
-                />
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Medicine Name *"
-                  className="px-3 py-2 border rounded-lg"
-                  required
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SKU *</label>
+                  <input
+                    type="text"
+                    value={formData.sku}
+                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Medicine Name *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  rows={2}
                 />
               </div>
 
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Description"
-                className="w-full px-3 py-2 border rounded-lg"
-                rows={2}
-              />
-
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="Category"
-                  className="px-3 py-2 border rounded-lg"
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.unitCost}
-                  onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) })}
-                  placeholder="Purchase Price (Cost) *"
-                  className="px-3 py-2 border rounded-lg"
-                  required
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price (Cost) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.unitCost}
+                    onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
@@ -594,22 +612,26 @@ export function InventoryManagement() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.sellingPrice}
-                  onChange={(e) => setFormData({ ...formData, sellingPrice: parseFloat(e.target.value) })}
-                  placeholder="Selling Price *"
-                  className="px-3 py-2 border rounded-lg"
-                  required
-                />
-                <input
-                  type="date"
-                  value={formData.expirationDate}
-                  onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
-                  placeholder="Expiration Date"
-                  className="px-3 py-2 border rounded-lg"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.sellingPrice}
+                    onChange={(e) => setFormData({ ...formData, sellingPrice: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Date</label>
+                  <input
+                    type="date"
+                    value={formData.expirationDate}
+                    onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
               </div>
 
               <label className="flex items-center gap-2">
