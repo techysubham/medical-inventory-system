@@ -2,6 +2,8 @@ import InventoryItem from '../models/InventoryItem.js';
 import PurchaseOrder from '../models/PurchaseOrder.js';
 import Alert from '../models/Alert.js';
 import { AppSettings } from '../models/Settings.js';
+import { io } from '../server.js';
+import { computeStats } from './statsService.js';
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -36,7 +38,12 @@ export async function runDetectors() {
       const message = `${item.name} (SKU: ${item.sku}) quantity is ${item.currentQuantity} strips. Alert threshold: ${stripThreshold} strips.`;
       const already = await dedupeAlert('stock', item._id);
       if (already) continue;
-      await Alert.create({ title, message, severity, type: 'stock', relatedItemId: item._id, actionRequired: true });
+      const created = await Alert.create({ title, message, severity, type: 'stock', relatedItemId: item._id, actionRequired: true });
+      try {
+        if (io) io.emit('alert:created', created);
+      } catch (e) {
+        console.warn('Failed to emit alert:created via Socket.IO', e);
+      }
     }
 
     // Expiry detector: alert if expiry within 1 month (30 days)
@@ -54,7 +61,12 @@ export async function runDetectors() {
       const message = `${item.name} (SKU: ${item.sku}) expires in ${daysLeft} day(s) on ${item.expirationDate.toISOString().split('T')[0]}.`;
       const already = await dedupeAlert('expiry', item._id);
       if (already) continue;
-      await Alert.create({ title, message, severity, type: 'expiry', relatedItemId: item._id, actionRequired: true });
+      const created = await Alert.create({ title, message, severity, type: 'expiry', relatedItemId: item._id, actionRequired: true });
+      try {
+        if (io) io.emit('alert:created', created);
+      } catch (e) {
+        console.warn('Failed to emit alert:created via Socket.IO', e);
+      }
     }
 
     // Overdue purchase orders detector (dueDate passed and not delivered)
@@ -64,10 +76,25 @@ export async function runDetectors() {
       const message = `Purchase order ${order.orderNumber} is overdue (status: ${order.status}). Due date: ${order.dueDate ? order.dueDate.toISOString().split('T')[0] : 'N/A'}.`;
       const already = await dedupeAlert('order', order._id);
       if (already) continue;
-      await Alert.create({ title, message, severity: 'high', type: 'order', relatedOrderId: order._id, actionRequired: true });
+      const created = await Alert.create({ title, message, severity: 'high', type: 'order', relatedOrderId: order._id, actionRequired: true });
+      try {
+        if (io) io.emit('alert:created', created);
+      } catch (e) {
+        console.warn('Failed to emit alert:created via Socket.IO', e);
+      }
     }
 
     console.log('Alert detectors run complete');
+    
+    // Emit updated stats after running detectors so low-stock and expiring counts update in realtime
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after running detectors', e);
+    }
   } catch (err) {
     console.error('Error running alert detectors:', err);
   }

@@ -4,6 +4,8 @@ import dns from 'dns';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server as IOServer } from 'socket.io';
 import authRoutes from './routes/auth.js';
 import inventoryRoutes from './routes/inventory.js';
 import discountRoutes from './routes/discounts.js';
@@ -14,6 +16,7 @@ import alertRoutes from './routes/alerts.js';
 import reportRoutes from './routes/reports.js';
 import settingsRoutes from './routes/settings.js';
 import { startScheduler } from './services/alertDetector.js';
+import statsRoutes from './routes/stats.js';
 
 dotenv.config();
 
@@ -27,6 +30,24 @@ try {
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const httpServer = createServer(app);
+
+// Attach Socket.IO server with CORS allowed for frontend origin(s)
+export let io = null;
+function setupSocketIO() {
+  io = new IOServer(httpServer, {
+    cors: {
+      origin: [process.env.FRONTEND_URL || 'http://localhost:5173'],
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
+  });
+
+  io.on('connection', (socket) => {
+    console.log('Socket connected:', socket.id);
+    socket.on('disconnect', () => console.log('Socket disconnected:', socket.id));
+  });
+}
 
 // Middleware
 // Configure CORS with a dynamic allowlist. Accepts `FRONTEND_URL` and localhost.
@@ -69,6 +90,7 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -108,9 +130,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+// Start HTTP server (used by Express + Socket.IO)
+setupSocketIO();
+httpServer.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  // Start alert detector scheduler (daily by default)
+  // Start alert detector scheduler
   try {
     startScheduler();
   } catch (err) {

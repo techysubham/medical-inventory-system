@@ -4,6 +4,8 @@ import Supplier from '../models/Supplier.js';
 import mongoose from 'mongoose';
 import { authenticate } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/rbac.js';
+import { io } from '../server.js';
+import { computeStats } from '../services/statsService.js';
 
 const router = express.Router();
 
@@ -58,6 +60,14 @@ router.post('/', authenticate, requirePermission('manage_orders'), async (req, r
     await order.save();
     await order.populate('supplierId').populate('items.itemId');
     res.status(201).json(order);
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after order create', e);
+    }
   } catch (err) {
     // Send validation, cast and duplicate key errors with clearer messages
     if (err.name === 'ValidationError' || err.name === 'CastError') {
@@ -81,6 +91,14 @@ router.put('/:id', authenticate, requirePermission('manage_orders'), async (req,
       .populate('items.itemId');
     if (!order) return res.status(404).json({ error: 'Order not found' });
     res.json(order);
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after order update', e);
+    }
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -92,6 +110,14 @@ router.delete('/:id', authenticate, requirePermission('manage_orders'), async (r
     const order = await PurchaseOrder.findByIdAndDelete(req.params.id);
     if (!order) return res.status(404).json({ error: 'Order not found' });
     res.json({ message: 'Order deleted' });
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after order delete', e);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

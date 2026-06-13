@@ -3,6 +3,8 @@ import InventoryItem from '../models/InventoryItem.js';
 import { StockCarton, StockBox } from '../models/Stock.js';
 import Alert from '../models/Alert.js';
 import { authenticate } from '../middleware/auth.js';
+import { io } from '../server.js';
+import { computeStats } from '../services/statsService.js';
 
 const router = express.Router();
 
@@ -53,6 +55,15 @@ router.post('/cartons/:cartonId/boxes', authenticate, async (req, res) => {
     }
 
     res.status(201).json(box);
+    // emit updated stats after inventory change
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after creating box', e);
+    }
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -79,6 +90,14 @@ router.post('/cartons/:cartonId/boxes/bulk', authenticate, async (req, res) => {
     }
 
     res.status(201).json(inserted);
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after bulk insert', e);
+    }
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -98,6 +117,14 @@ router.delete('/cartons/:cartonId', authenticate, async (req, res) => {
     await recalcItemQuantity(carton.itemId);
 
     res.json({ message: 'Carton deleted' });
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after carton delete', e);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -117,6 +144,14 @@ router.delete('/boxes/:boxId', authenticate, async (req, res) => {
     if (carton) await recalcItemQuantity(carton.itemId);
 
     res.json({ message: 'Box deleted' });
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after box delete', e);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -138,6 +173,14 @@ router.post('/', authenticate, async (req, res) => {
     const item = new InventoryItem(req.body);
     await item.save();
     res.status(201).json(item);
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after item create', e);
+    }
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -256,6 +299,14 @@ router.put('/:id', authenticate, async (req, res) => {
     }
     
     res.json(item);
+    try {
+      if (io) {
+        const stats = await computeStats();
+        io.emit('stats:update', stats);
+      }
+    } catch (e) {
+      console.warn('Failed to emit stats:update after item update', e);
+    }
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
