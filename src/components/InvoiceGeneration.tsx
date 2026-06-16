@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { Plus, X, Eye, Trash2 } from 'lucide-react';
+import { Plus, X, Eye, Trash2, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const normalizedBase = rawApi.replace(/\/+$/g, '');
@@ -24,6 +26,7 @@ export function InvoiceGeneration() {
   const [showModal, setShowModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const invoiceContentRef = useRef<HTMLDivElement>(null);
   const [storeInfo, setStoreInfo] = useState({
     name: 'Your Medicine Store',
     gst: '',
@@ -171,6 +174,52 @@ export function InvoiceGeneration() {
     }
   };
 
+  const downloadInvoicePDF = async (invoice: any) => {
+    try {
+      if (!invoiceContentRef.current) {
+        alert('Error: Invoice content not available');
+        return;
+      }
+
+      const canvas = await html2canvas(invoiceContentRef.current, {
+        scale: 2,
+        allowTaint: true,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth - 10;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 5;
+
+      pdf.addImage(imgData, 'PNG', 5, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight - 10;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 5, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`invoice-${invoice.invoiceNumber || invoice._id}.pdf`);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Error generating PDF');
+    }
+  };
+
   const updateItem = (index: number, partial: any) => {
     setInvoiceItems((s) => s.map((it, i) => i === index ? { ...it, ...partial } : it));
   };
@@ -243,13 +292,33 @@ export function InvoiceGeneration() {
                         }
                       }}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                      title="View"
                     >
                       <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`${API_URL}/invoices/${invoice._id}`, { headers });
+                          if (!res.ok) throw new Error('Failed to fetch invoice');
+                          const data = await res.json();
+                          setSelectedInvoice(data);
+                          await downloadInvoicePDF(data);
+                        } catch (err) {
+                          console.error(err);
+                          alert('Error downloading invoice');
+                        }
+                      }}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded"
+                      title="Download"
+                    >
+                      <Download size={18} />
                     </button>
                     {hasPermission('manage_invoices') && (
                       <button
                         onClick={() => deleteInvoice(invoice._id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded"
+                        title="Delete"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -368,10 +437,20 @@ export function InvoiceGeneration() {
               <h3 className="text-lg font-semibold">Invoice Preview</h3>
               <div className="flex gap-2">
                 <button
+                  onClick={async () => {
+                    await downloadInvoicePDF(selectedInvoice);
+                  }}
+                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                  title="Download as PDF"
+                >
+                  <Download size={18} className="inline mr-1" />
+                  Download
+                </button>
+                <button
                   onClick={() => {
                     window.print();
                   }}
-                  className="px-3 py-1 bg-green-600 text-white rounded"
+                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   Print
                 </button>
@@ -379,7 +458,7 @@ export function InvoiceGeneration() {
               </div>
             </div>
 
-            <div className="p-6 printable-area" style={{background: 'white'}}>
+            <div className="p-6 printable-area" ref={invoiceContentRef} style={{background: 'white'}}>
               <style>{`
                 @page { size: A4 portrait; margin: 10mm; }
                 @media print {
