@@ -26,6 +26,7 @@ export function InvoiceGeneration() {
   const [showModal, setShowModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [shouldDownloadPDF, setShouldDownloadPDF] = useState(false);
   const invoiceContentRef = useRef<HTMLDivElement>(null);
   const [storeInfo, setStoreInfo] = useState({
     name: 'Your Medicine Store',
@@ -55,6 +56,13 @@ export function InvoiceGeneration() {
     if (token) fetchInvoices();
     if (token) fetchInventory();
   }, [token]);
+
+  useEffect(() => {
+    if (shouldDownloadPDF && showPrintModal && invoiceContentRef.current) {
+      downloadInvoicePDF(selectedInvoice);
+      setShouldDownloadPDF(false);
+    }
+  }, [shouldDownloadPDF, showPrintModal, invoiceContentRef]);
 
   const fetchInventory = async () => {
     try {
@@ -303,7 +311,8 @@ export function InvoiceGeneration() {
                           if (!res.ok) throw new Error('Failed to fetch invoice');
                           const data = await res.json();
                           setSelectedInvoice(data);
-                          await downloadInvoicePDF(data);
+                          setShowPrintModal(true);
+                          setShouldDownloadPDF(true);
                         } catch (err) {
                           console.error(err);
                           alert('Error downloading invoice');
