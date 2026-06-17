@@ -292,7 +292,7 @@ export function InventoryManagement() {
     setEditingItem(null);
   };
 
-  const resetStockForm = () => {
+  const resetStockForm = (defaultExpiration?: string) => {
     setStockForm({
       numberOfCartoons: 1,
       numberOfBoxesPerCarton: 1,
@@ -300,7 +300,7 @@ export function InventoryManagement() {
       purchasePrice: 0,
       supplierId: '',
       receivedDate: new Date().toISOString().split('T')[0],
-      expirationDate: '',
+      expirationDate: defaultExpiration ?? '',
       notes: '',
     });
   };
@@ -500,9 +500,10 @@ export function InventoryManagement() {
                   {hasPermission('manage_inventory') && (
                     <button
                       onClick={() => {
-                        resetStockForm();
-                        setShowStockModal(true);
-                      }}
+                          const defaultExp = selectedItem?.expirationDate ? (selectedItem.expirationDate.split ? selectedItem.expirationDate.split('T')[0] : selectedItem.expirationDate) : '';
+                          resetStockForm(defaultExp || undefined);
+                          setShowStockModal(true);
+                        }}
                       className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                     >
                       <Plus size={20} />

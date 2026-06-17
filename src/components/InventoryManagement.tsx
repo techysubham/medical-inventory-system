@@ -492,6 +492,13 @@ export function InventoryManagement() {
                             <button
                               onClick={() => {
                                 setSelectedItemId(item._id);
+                                setCartonData({
+                                  numberOfCartoons: 1,
+                                  numberOfBoxesPerCarton: 1,
+                                  stripsPerBox: 0,
+                                  purchasePrice: 0,
+                                  expirationDate: item.expirationDate ? (item.expirationDate.split ? item.expirationDate.split('T')[0] : item.expirationDate) : '',
+                                });
                                 setShowCartonModal(true);
                               }}
                               className="btn-glossy flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-4 py-2 text-xs font-bold shadow-glossy-sm"
