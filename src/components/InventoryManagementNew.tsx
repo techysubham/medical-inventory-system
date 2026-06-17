@@ -717,54 +717,68 @@ export function InventoryManagement() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Number of Cartoons *"
-                  value={stockForm.numberOfCartoons}
-                  onChange={(e) => setStockForm({ ...stockForm, numberOfCartoons: parseInt(e.target.value) || 1 })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Number of Boxes per Carton *"
-                  value={stockForm.numberOfBoxesPerCarton}
-                  onChange={(e) => setStockForm({ ...stockForm, numberOfBoxesPerCarton: parseInt(e.target.value) || 1 })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Strips per Box *"
-                  value={stockForm.stripsPerBox}
-                  onChange={(e) => setStockForm({ ...stockForm, stripsPerBox: parseInt(e.target.value) || 100 })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Purchase Price per Carton *"
-                  value={stockForm.purchasePrice}
-                  onChange={(e) => setStockForm({ ...stockForm, purchasePrice: parseFloat(e.target.value) || 0 })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-                <input
-                  type="date"
-                  value={stockForm.receivedDate}
-                  onChange={(e) => setStockForm({ ...stockForm, receivedDate: e.target.value })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="date"
-                  value={stockForm.expirationDate}
-                  onChange={(e) => setStockForm({ ...stockForm, expirationDate: e.target.value })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg"
-                />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Number of Cartons *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={stockForm.numberOfCartoons}
+                    onChange={(e) => setStockForm({ ...stockForm, numberOfCartoons: parseInt(e.target.value) || 1 })}
+                    className="px-4 py-2 border border-gray-300 rounded-lg w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Number of Boxes per Carton *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={stockForm.numberOfBoxesPerCarton}
+                    onChange={(e) => setStockForm({ ...stockForm, numberOfBoxesPerCarton: parseInt(e.target.value) || 1 })}
+                    className="px-4 py-2 border border-gray-300 rounded-lg w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Strips per Box *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={stockForm.stripsPerBox}
+                    onChange={(e) => setStockForm({ ...stockForm, stripsPerBox: parseInt(e.target.value) || 100 })}
+                    className="px-4 py-2 border border-gray-300 rounded-lg w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Purchase Price per Carton *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={stockForm.purchasePrice}
+                    onChange={(e) => setStockForm({ ...stockForm, purchasePrice: parseFloat(e.target.value) || 0 })}
+                    className="px-4 py-2 border border-gray-300 rounded-lg w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Received Date</label>
+                  <input
+                    type="date"
+                    value={stockForm.receivedDate}
+                    onChange={(e) => setStockForm({ ...stockForm, receivedDate: e.target.value })}
+                    className="px-4 py-2 border border-gray-300 rounded-lg w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Expiration Date</label>
+                  <input
+                    type="date"
+                    value={stockForm.expirationDate}
+                    onChange={(e) => setStockForm({ ...stockForm, expirationDate: e.target.value })}
+                    className="px-4 py-2 border border-gray-300 rounded-lg w-full"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">

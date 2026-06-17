@@ -685,48 +685,63 @@ export function InventoryManagement() {
                   </strong>
                 </p>
               </div>
-              <input
-                type="number"
-                min="1"
-                value={cartonData.numberOfCartoons}
-                onChange={(e) => setCartonData({ ...cartonData, numberOfCartoons: parseInt(e.target.value) || 1 })}
-                placeholder="Number of Cartoons *"
-                className="input-modern"
-                required
-              />
-              <input
-                type="number"
-                min="1"
-                value={cartonData.numberOfBoxesPerCarton}
-                onChange={(e) => setCartonData({ ...cartonData, numberOfBoxesPerCarton: parseInt(e.target.value) || 1 })}
-                placeholder="Number of Boxes per Carton *"
-                className="input-modern"
-                required
-              />
-              <input
-                type="number"
-                min="1"
-                value={cartonData.stripsPerBox}
-                onChange={(e) => setCartonData({ ...cartonData, stripsPerBox: parseInt(e.target.value) || 1 })}
-                placeholder="Strips per Box *"
-                className="input-modern"
-                required
-              />
-              <input
-                type="number"
-                step="0.01"
-                value={cartonData.purchasePrice}
-                onChange={(e) => setCartonData({ ...cartonData, purchasePrice: parseFloat(e.target.value) })}
-                placeholder="Purchase Price per Carton"
-                className="input-modern"
-              />
-              <input
-                type="date"
-                value={cartonData.expirationDate}
-                onChange={(e) => setCartonData({ ...cartonData, expirationDate: e.target.value })}
-                placeholder="Expiration Date"
-                className="input-modern"
-              />
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Number of Cartons *</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={cartonData.numberOfCartoons}
+                  onChange={(e) => setCartonData({ ...cartonData, numberOfCartoons: parseInt(e.target.value) || 1 })}
+                  className="input-modern"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Number of Boxes per Carton *</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={cartonData.numberOfBoxesPerCarton}
+                  onChange={(e) => setCartonData({ ...cartonData, numberOfBoxesPerCarton: parseInt(e.target.value) || 1 })}
+                  className="input-modern"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Strips per Box *</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={cartonData.stripsPerBox}
+                  onChange={(e) => setCartonData({ ...cartonData, stripsPerBox: parseInt(e.target.value) || 1 })}
+                  className="input-modern"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Purchase Price per Carton</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={cartonData.purchasePrice}
+                  onChange={(e) => setCartonData({ ...cartonData, purchasePrice: parseFloat(e.target.value) })}
+                  className="input-modern"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Expiration Date</label>
+                <input
+                  type="date"
+                  value={cartonData.expirationDate}
+                  onChange={(e) => setCartonData({ ...cartonData, expirationDate: e.target.value })}
+                  className="input-modern"
+                />
+              </div>
 
               <div className="flex justify-end gap-4 pt-6 border-t border-white/20">
                 <button type="button" onClick={() => setShowCartonModal(false)} className="btn-modern px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 font-semibold rounded-xl">
