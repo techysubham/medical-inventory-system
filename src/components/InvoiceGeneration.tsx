@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { Plus, X, Eye, Trash2, Download } from 'lucide-react';
+import { Plus, X, Eye, Trash2, Download, FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -51,6 +51,8 @@ export function InvoiceGeneration() {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
+
+  // Print functionality removed per request: printInvoice is disabled.
 
   useEffect(() => {
     if (token) fetchInvoices();
@@ -256,37 +258,43 @@ export function InvoiceGeneration() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Invoice Management</h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <FileText size={36} className="text-blue-600" />
+            <span className="text-gradient bg-gradient-to-r from-blue-600 to-teal-600">Invoice Management</span>
+          </h1>
+          <p className="text-gray-600">Create and manage customer invoices</p>
+        </div>
         {hasPermission('manage_invoices') && (
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn-glossy flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-6 py-3 shadow-glossy-lg"
           >
             <Plus size={20} />
-            Create Invoice
+            <span className="font-bold">Create Invoice</span>
           </button>
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="glass-card shadow-glossy-lg overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-gray-200/50">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Invoice #</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Customer</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Amount</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Date</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Actions</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Invoice #</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Customer</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Amount</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Date</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-gray-200/50">
             {invoices.map((invoice) => (
-              <tr key={invoice._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-sm font-medium">{invoice.invoiceNumber}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{invoice.customerName}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{currencySymbol}{invoice.totalAmount.toFixed(2)}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{invoice.createdAt?.split('T')[0]}</td>
-                <td className="px-6 py-4 text-sm flex gap-2">
+              <tr key={invoice._id} className="hover:bg-blue-50/50 transition-all duration-300 group">
+                <td className="px-6 py-4 text-sm font-bold text-gray-900 group-hover:text-blue-600">{invoice.invoiceNumber}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-800">{invoice.customerName}</td>
+                <td className="px-6 py-4 text-sm font-semibold text-green-600">{currencySymbol}{invoice.totalAmount.toFixed(2)}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{invoice.createdAt?.split('T')[0]}</td>
+                <td className="px-6 py-4 text-sm flex gap-3">
                     <button
                       onClick={async () => {
                         try {
@@ -299,7 +307,7 @@ export function InvoiceGeneration() {
                           alert('Error loading invoice');
                         }
                       }}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                      className="p-2.5 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
                       title="View"
                     >
                       <Eye size={18} />
@@ -318,7 +326,7 @@ export function InvoiceGeneration() {
                           alert('Error downloading invoice');
                         }
                       }}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded"
+                      className="p-2.5 text-green-600 hover:bg-green-100 hover:text-green-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
                       title="Download"
                     >
                       <Download size={18} />
@@ -326,7 +334,7 @@ export function InvoiceGeneration() {
                     {hasPermission('manage_invoices') && (
                       <button
                         onClick={() => deleteInvoice(invoice._id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded"
+                        className="p-2.5 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
                         title="Delete"
                       >
                         <Trash2 size={18} />
@@ -341,24 +349,24 @@ export function InvoiceGeneration() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
-            <div className="border-b px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Create Invoice</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="glass-card max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto shadow-glossy-lg border border-white/20">
+            <div className="border-b border-white/20 px-8 py-6 flex justify-between items-center sticky top-0 bg-gradient-to-r from-blue-50/90 to-cyan-50/90 backdrop-blur">
+              <h2 className="text-2xl font-bold text-gradient bg-gradient-to-r from-blue-600 to-teal-600">📄 Create Invoice</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-lg transition-all duration-300">
                 <X size={24} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 gap-2">
-                <input type="text" value={formData.customerName} onChange={(e) => setFormData({...formData, customerName: e.target.value})} placeholder="Customer Name *" className="w-full px-4 py-2 border rounded-lg" required />
-                <div className="flex gap-2">
-                  <input type="email" value={formData.customerEmail} onChange={(e) => setFormData({...formData, customerEmail: e.target.value})} placeholder="Email" className="flex-1 px-4 py-2 border rounded-lg" />
-                  <input type="tel" value={formData.customerPhone} onChange={(e) => setFormData({...formData, customerPhone: e.target.value})} placeholder="Phone" className="w-48 px-4 py-2 border rounded-lg" />
+            <form onSubmit={handleSubmit} className="p-8 space-y-5">
+              <div className="grid grid-cols-1 gap-4">
+                <input type="text" value={formData.customerName} onChange={(e) => setFormData({...formData, customerName: e.target.value})} placeholder="Customer Name *" className="input-modern" required />
+                <div className="flex gap-3">
+                  <input type="email" value={formData.customerEmail} onChange={(e) => setFormData({...formData, customerEmail: e.target.value})} placeholder="Email" className="flex-1 input-modern" />
+                  <input type="tel" value={formData.customerPhone} onChange={(e) => setFormData({...formData, customerPhone: e.target.value})} placeholder="Phone" className="w-48 input-modern" />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <select value={selectedItemId} onChange={(e)=>setSelectedItemId(e.target.value)} className="flex-1 px-3 py-2 border rounded">
+                <div className="flex items-center gap-3">
+                  <select value={selectedItemId} onChange={(e)=>setSelectedItemId(e.target.value)} className="flex-1 input-modern">
                     <option value="">Select medicine to add</option>
                     {inventory.map((it) => (
                       <option key={it._id || it.id} value={it._id || it.id}>{it.name || it.title} {it.pack ? ` - ${it.pack}` : ''}</option>
@@ -430,9 +438,9 @@ export function InvoiceGeneration() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg text-gray-700">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Create</button>
+              <div className="flex justify-end gap-4 pt-6 border-t border-white/20">
+                <button type="button" onClick={() => setShowModal(false)} className="btn-modern px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 font-semibold rounded-xl">Cancel</button>
+                <button type="submit" className="btn-glossy px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl shadow-glossy-lg">Create Invoice</button>
               </div>
             </form>
           </div>
@@ -455,14 +463,7 @@ export function InvoiceGeneration() {
                   <Download size={18} className="inline mr-1" />
                   Download
                 </button>
-                <button
-                  onClick={() => {
-                    window.print();
-                  }}
-                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Print
-                </button>
+                {/* Print disabled - keep Download and Close options only */}
                 <button onClick={() => setShowPrintModal(false)} className="px-3 py-1 border rounded">Close</button>
               </div>
             </div>

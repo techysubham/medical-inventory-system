@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Tag } from 'lucide-react';
 
 const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const normalizedBase = rawApi.replace(/\/+$/g, '');
@@ -140,56 +140,69 @@ export function DiscountManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Discount Management</h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <Tag size={36} className="text-blue-600" />
+            <span className="text-gradient bg-gradient-to-r from-blue-600 to-teal-600">Discount Management</span>
+          </h1>
+          <p className="text-gray-600">Create and manage discount tiers</p>
+        </div>
         {hasPermission('manage_discounts') && (
           <button
             onClick={() => {
               resetForm();
               setShowModal(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn-glossy flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-6 py-3 shadow-glossy-lg"
           >
             <Plus size={20} />
-            Add Discount Tier
+            <span className="font-bold">Add Discount Tier</span>
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {discountTiers.map((tier) => (
-          <div key={tier._id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition">
-            <div className="flex items-start justify-between mb-3">
+          <div key={tier._id} className="glass-card border-2 rounded-2xl p-6 hover:shadow-glossy-lg transition-all duration-300 hover:scale-105 group" style={{
+            borderColor: tier.colorCode,
+            background: `linear-gradient(135deg, ${tier.colorCode}15 0%, ${tier.colorCode}08 100%)`
+          }}>
+            <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900">{tier.name}</h3>
-                <p className="text-2xl font-bold" style={{ color: tier.colorCode }}>
+                <h3 className="text-xl font-bold text-gray-900 group-hover:text-opacity-80 transition" style={{ color: tier.colorCode }}>
+                  {tier.name}
+                </h3>
+                <p className="text-5xl font-bold mt-3 transition-all duration-300" style={{ color: tier.colorCode }}>
                   {tier.discountPercentage}%
                 </p>
               </div>
               <div
-                className="w-12 h-12 rounded-lg"
-                style={{ backgroundColor: tier.colorCode, opacity: 0.2 }}
-              ></div>
+                className="w-16 h-16 rounded-2xl shadow-glossy-sm border-2 flex items-center justify-center font-bold text-white text-2xl"
+                style={{ backgroundColor: tier.colorCode, borderColor: tier.colorCode }}
+              >
+                {tier.discountPercentage}%
+              </div>
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+            <div className="flex items-center justify-between pt-4" style={{ borderTop: `1px solid ${tier.colorCode}40` }}>
               <span
                 className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  tier.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  tier.isActive ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-glossy-sm' : 'bg-gray-200 text-gray-700'
                 }`}
               >
-                {tier.isActive ? 'Active' : 'Inactive'}
+                {tier.isActive ? '✓ Active' : 'Inactive'}
               </span>
               {hasPermission('manage_discounts') && (
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button
                     onClick={() => handleEdit(tier)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                    className="p-2.5 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
                   >
                     <Edit2 size={18} />
                   </button>
                   <button
                     onClick={() => handleDelete(tier._id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded"
+                    className="p-2.5 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
                   >
                     <Trash2 size={18} />
                   </button>

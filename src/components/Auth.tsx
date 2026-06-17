@@ -23,34 +23,41 @@ export function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-br from-blue-300 to-cyan-300 opacity-20 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+      <div className="absolute bottom-10 right-10 w-72 h-72 bg-gradient-to-br from-purple-300 to-pink-300 opacity-20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="glass-card overflow-hidden shadow-glossy-lg">
           <div className="px-8 pt-8 pb-6">
-            <div className="flex items-center justify-center mb-6">
-              <div className="bg-gradient-to-br from-blue-600 to-teal-600 p-3 rounded-xl">
-                <Heart className="w-8 h-8 text-white" />
+            <div className="flex items-center justify-center mb-8">
+              <div className="relative w-20 h-20">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-cyan-500 to-teal-600 rounded-2xl opacity-75 blur-lg animate-pulse"></div>
+                <div className="relative w-20 h-20 bg-gradient-to-br from-blue-600 to-teal-600 rounded-2xl flex items-center justify-center shadow-glossy">
+                  <Heart className="w-10 h-10 text-white" />
+                </div>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
+            <h1 className="text-4xl font-bold text-center mb-2 text-gradient bg-gradient-to-r from-blue-600 to-teal-600">
               Medical Inventory Pro
             </h1>
-            <p className="text-gray-600 text-center mb-8">
-              Sign in to your account to continue
+            <p className="text-gray-600 text-center mb-8 text-lg">
+              Sign in to your account
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Email Address
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500 w-5 h-5 transition-all group-focus-within:scale-110" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="input-modern pl-12"
                     placeholder="you@example.com"
                     required
                   />
@@ -58,16 +65,16 @@ export function Auth() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Password
                 </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500 w-5 h-5 transition-all group-focus-within:scale-110" />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="input-modern pl-12"
                     placeholder="••••••••"
                     required
                   />
@@ -75,24 +82,34 @@ export function Auth() {
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                  {error}
+                <div className="glass-card border-l-4 border-red-500 bg-red-50/50 p-4 text-red-700 text-sm font-medium">
+                  <p className="flex items-center gap-2">
+                    <span className="text-xl">⚠️</span>
+                    {error}
+                  </p>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-glossy w-full bg-gradient-to-r from-blue-600 to-teal-600 text-white font-bold py-4 text-lg hover:from-blue-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-glossy-lg"
               >
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin">⏳</span>
+                    Signing In...
+                  </span>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </form>
           </div>
 
-          <div className="px-8 py-4 bg-gray-50 border-t border-gray-100">
-            <p className="text-center text-sm text-gray-600">
-              Contact your administrator for account access
+          <div className="px-8 py-4 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 border-t border-white/30">
+            <p className="text-center text-sm text-gray-600 font-medium">
+              💡 Contact your administrator for account access
             </p>
           </div>
         </div>

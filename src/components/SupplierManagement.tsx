@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Building2 } from 'lucide-react';
 
 const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const normalizedBase = rawApi.replace(/\/+$/g, '');
@@ -120,52 +120,58 @@ export function SupplierManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Supplier Management</h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <Building2 size={36} className="text-blue-600" />
+            <span className="text-gradient bg-gradient-to-r from-blue-600 to-teal-600">Supplier Management</span>
+          </h1>
+          <p className="text-gray-600">Manage your suppliers and their information</p>
+        </div>
         {hasPermission('manage_suppliers') && (
           <button
             onClick={() => {
               resetForm();
               setShowModal(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn-glossy flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-6 py-3 shadow-glossy-lg"
           >
             <Plus size={20} />
-            Add Supplier
+            <span className="font-bold">Add Supplier</span>
           </button>
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="glass-card shadow-glossy-lg overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-gray-200/50">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Name</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Phone</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">City</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Status</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Actions</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Name</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Email</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Phone</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">City</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Status</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-gray-200/50">
             {suppliers.map((supplier) => (
-              <tr key={supplier._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-sm font-medium">{supplier.name}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{supplier.email || '-'}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{supplier.phone || '-'}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{supplier.city || '-'}</td>
+              <tr key={supplier._id} className="hover:bg-blue-50/50 transition-all duration-300 group">
+                <td className="px-6 py-4 text-sm font-bold text-gray-900 group-hover:text-blue-600">{supplier.name}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{supplier.email || '-'}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{supplier.phone || '-'}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{supplier.city || '-'}</td>
                 <td className="px-6 py-4 text-sm">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${supplier.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}>
+                  <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-glossy-sm ${supplier.status === 'active' ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
                     {supplier.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm flex gap-2">
+                <td className="px-6 py-4 text-sm flex gap-3">
                   {hasPermission('manage_suppliers') ? (
                     <>
-                      <button onClick={() => handleEdit(supplier)} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                      <button onClick={() => handleEdit(supplier)} className="p-2.5 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm">
                         <Edit2 size={18} />
                       </button>
-                      <button onClick={() => handleDelete(supplier._id)} className="p-2 text-red-600 hover:bg-red-50 rounded">
+                      <button onClick={() => handleDelete(supplier._id)} className="p-2.5 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm">
                         <Trash2 size={18} />
                       </button>
                     </>

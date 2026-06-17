@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, ShoppingCart } from 'lucide-react';
 
 const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const normalizedBase = rawApi.replace(/\/+$/g, '');
@@ -124,7 +124,13 @@ export function PurchaseOrderManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Purchase Orders</h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <ShoppingCart size={36} className="text-blue-600" />
+            <span className="text-gradient bg-gradient-to-r from-blue-600 to-teal-600">Purchase Orders</span>
+          </h1>
+          <p className="text-gray-600">Manage purchase orders and track shipments</p>
+        </div>
         {hasPermission('manage_suppliers') && (
           <button
             onClick={() => { resetForm(); setShowModal(true); }}

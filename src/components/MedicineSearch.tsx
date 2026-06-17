@@ -86,7 +86,13 @@ export function MedicineSearch() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Medicine Search & Discounts</h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <Search size={36} className="text-blue-600" />
+            <span className="text-gradient bg-gradient-to-r from-blue-600 to-teal-600">Medicine Search & Discounts</span>
+          </h1>
+          <p className="text-gray-600">Find medicines and view available discounts</p>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">

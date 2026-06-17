@@ -82,8 +82,13 @@ export function SettingsManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <Settings className="text-gray-400" size={32} />
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <Settings size={36} className="text-gray-700" />
+            <span className="text-gradient bg-gradient-to-r from-gray-700 to-gray-900">Settings</span>
+          </h1>
+          <p className="text-gray-600">Configure system and business settings</p>
+        </div>
       </div>
 
       {message && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Edit2, Trash2, X, Save } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Users as UsersIcon } from 'lucide-react';
 
 const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const normalizedBase = rawApi.replace(/\/+$/g, '');
@@ -162,42 +162,48 @@ export function UserManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <UsersIcon size={36} className="text-blue-600" />
+            <span className="text-gradient bg-gradient-to-r from-blue-600 to-teal-600">User Management</span>
+          </h1>
+          <p className="text-gray-600">Manage system users and their permissions</p>
+        </div>
         {hasPermission('manage_users') && (
           <button
             onClick={() => {
               resetForm();
               setShowModal(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn-glossy flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-6 py-3 shadow-glossy-lg"
           >
             <Plus size={20} />
-            Create User
+            <span className="font-bold">Create User</span>
           </button>
         )}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="glass-card border border-white/20 shadow-glossy-lg overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-gray-200/50">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Name</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Role</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Permissions</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Name</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Email</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Role</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Permissions</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Status</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-gray-200/50">
             {users.map((user) => (
-              <tr key={user._id} className="hover:bg-gray-50">
+              <tr key={user._id} className="hover:bg-blue-50/50 transition-all duration-300 group">
                 <td className="px-6 py-4">
-                  <div className="font-medium text-gray-900">
+                  <div className="font-bold text-gray-900 group-hover:text-blue-600">
                     {user.firstName} {user.lastName}
                   </div>
                 </td>
-                <td className="px-6 py-4 text-gray-600">{user.email}</td>
+                <td className="px-6 py-4 text-gray-700">{user.email}</td>
                 <td className="px-6 py-4">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(user.role)}`}>
                     {user.role}
@@ -215,18 +221,18 @@ export function UserManagement() {
                     {user.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </td>
-                <td className="px-6 py-4 flex gap-2">
+                <td className="px-6 py-4 flex gap-3">
                   {hasPermission('manage_users') ? (
                     <>
                       <button
                         onClick={() => openEditModal(user)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                        className="p-2.5 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
                       >
                         <Edit2 size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(user._id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded"
+                        className="p-2.5 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
                       >
                         <Trash2 size={18} />
                       </button>

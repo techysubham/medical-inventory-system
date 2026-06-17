@@ -362,7 +362,13 @@ export function InventoryManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <Package size={36} className="text-blue-600" />
+            <span className="text-gradient bg-gradient-to-r from-blue-600 to-teal-600">Inventory Management</span>
+          </h1>
+          <p className="text-gray-600">Manage your medicines and stock efficiently</p>
+        </div>
         {hasPermission('manage_inventory') && (
           <button
             onClick={() => {

@@ -92,38 +92,43 @@ export function AlertsManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Alerts</h1>
-        <span className="text-sm text-gray-600">{filteredAlerts.length} alerts</span>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <AlertTriangle size={36} className="text-red-600" />
+            <span className="text-gradient bg-gradient-to-r from-red-600 to-orange-600">Alerts</span>
+          </h1>
+          <p className="text-gray-600">{filteredAlerts.length} active alerts</p>
+        </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-3 mb-6">
         <button
           onClick={() => setFilterType('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`btn-modern px-6 py-3 rounded-xl text-sm font-bold transition ${
             filterType === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-glossy-lg'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
           }`}
         >
           All
         </button>
         <button
           onClick={() => setFilterType('stock')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`btn-modern px-6 py-3 rounded-xl text-sm font-bold transition ${
             filterType === 'stock'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-glossy-lg'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
           }`}
         >
           Low Stock
         </button>
         <button
           onClick={() => setFilterType('expiry')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`btn-modern px-6 py-3 rounded-xl text-sm font-bold transition ${
             filterType === 'expiry'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-glossy-lg'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
           }`}
         >
           Expiry
@@ -140,27 +145,27 @@ export function AlertsManagement() {
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {filteredAlerts.map((alert) => (
-          <div key={alert._id} className={`border-l-4 p-4 rounded-lg flex items-start justify-between ${getSeverityColor(alert.severity)}`}>
-            <div className="flex items-start gap-3 flex-1">
-              <div className="mt-1">{getSeverityIcon(alert.severity)}</div>
+          <div key={alert._id} className={`glass-card border-l-4 p-6 rounded-2xl flex items-start justify-between shadow-glossy ${getSeverityColor(alert.severity)} hover:shadow-glossy-lg transition-all duration-300`}>
+            <div className="flex items-start gap-4 flex-1">
+              <div className="mt-1 text-2xl">{getSeverityIcon(alert.severity)}</div>
               <div className="flex-1">
-                <h3 className="font-semibold">{alert.title}</h3>
-                <p className="text-sm mt-1">{alert.message}</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <p className="text-xs opacity-75">{alert.createdAt?.split('T')[0]}</p>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    alert.status === 'read' ? 'opacity-50' : 'font-bold'
+                <h3 className="font-bold text-lg text-gray-900">{alert.title}</h3>
+                <p className="text-sm text-gray-700 mt-2">{alert.message}</p>
+                <div className="flex items-center gap-4 mt-3">
+                  <p className="text-xs text-gray-500 font-medium">{alert.createdAt?.split('T')[0]}</p>
+                  <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-glossy-sm ${
+                    alert.status === 'read' ? 'bg-gray-200 text-gray-600 opacity-60' : 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white'
                   }`}>
-                    {alert.status === 'read' ? 'Read' : 'New'}
+                    {alert.status === 'read' ? '✓ Read' : '🔔 New'}
                   </span>
                 </div>
               </div>
             </div>
             <button
               onClick={() => deleteAlert(alert._id)}
-              className="ml-3 p-2 hover:bg-white hover:bg-opacity-30 rounded transition"
+              className="ml-4 p-2.5 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-lg transition-all duration-300 hover:scale-110"
               title="Dismiss alert"
             >
               <X size={20} />
@@ -170,8 +175,10 @@ export function AlertsManagement() {
       </div>
 
       {filteredAlerts.length === 0 && (
-        <div className="p-8 text-center text-gray-500 bg-white rounded-lg">
-          {filterType === 'all' ? 'No alerts at this time' : `No ${filterType} alerts`}
+        <div className="p-12 text-center glass-card rounded-2xl shadow-glossy">
+          <p className="text-lg text-gray-500 font-medium">
+            {filterType === 'all' ? '✨ No alerts at this time' : `📭 No ${filterType} alerts`}
+          </p>
         </div>
       )}
     </div>

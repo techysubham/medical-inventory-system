@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { Plus, Search, Edit2, Trash2, X, ChevronDown } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, ChevronDown, Package } from 'lucide-react';
 
 const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const normalizedBase = rawApi.replace(/\/+$/g, '');
@@ -372,101 +372,110 @@ export function InventoryManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <Package size={36} className="text-blue-600" />
+            <span className="text-gradient bg-gradient-to-r from-blue-600 to-teal-600">Inventory Management</span>
+          </h1>
+          <p className="text-gray-600">Manage your medicines and stock efficiently</p>
+        </div>
         {hasPermission('manage_inventory') && (
           <button
             onClick={() => {
               resetForm();
               setShowModal(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn-glossy flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-6 py-3 shadow-glossy-lg"
           >
             <Plus size={20} />
-            Add Medicine
+            <span className="font-bold">Add Medicine</span>
           </button>
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Search size={20} className="text-gray-400" />
+      <div className="glass-card p-6 shadow-glossy-lg">
+        <div className="flex items-center gap-3 mb-6 bg-white/50 px-4 py-3 rounded-xl border border-gray-200/50">
+          <Search size={22} className="text-blue-600" />
           <input
             type="text"
             placeholder="Search by name or SKU..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+            className="flex-1 bg-transparent outline-none text-gray-800 placeholder-gray-500 font-medium"
           />
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-2xl border border-gray-200/50">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-gray-200/50">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">SKU</th>
-                <th className="px-4 py-3 text-left font-semibold">Name</th>
-                <th className="px-4 py-3 text-left font-semibold">Category</th>
-                <th className="px-4 py-3 text-left font-semibold">Cost/Sell</th>
-                <th className="px-4 py-3 text-left font-semibold">Profit %</th>
-                <th className="px-4 py-3 text-left font-semibold">Stock</th>
-                <th className="px-4 py-3 text-left font-semibold">Discounts</th>
-                <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-800">SKU</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-800">Name</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-800">Category</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-800">Cost/Sell</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-800">Profit %</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-800">Stock</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-800">Discounts</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-800">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-gray-200/50">
               {filteredItems.map((item) => {
                 const { profit, profitPercent } = calculateProfit(item);
                 const applicableDiscounts = getApplicableDiscounts(item);
                 return (
-                  <tr key={item._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{item.sku}</td>
-                    <td className="px-4 py-3">{item.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{item.category}</td>
-                    <td className="px-4 py-3">{currencySymbol}{item.unitCost.toFixed(2)} / {currencySymbol}{item.sellingPrice.toFixed(2)}</td>
-                    <td className="px-4 py-3">
-                      <span className={profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600'}>
+                  <tr key={item._id} className="hover:bg-blue-50/50 transition-all duration-300 group">
+                    <td className="px-6 py-4 font-bold text-gray-900 group-hover:text-blue-600">{item.sku}</td>
+                    <td className="px-6 py-4 font-medium text-gray-800">{item.name}</td>
+                    <td className="px-6 py-4 text-gray-600 badge-modern bg-gray-100 text-gray-700 border-gray-300">{item.category}</td>
+                    <td className="px-6 py-4 font-medium">{currencySymbol}{item.unitCost.toFixed(2)} / {currencySymbol}{item.sellingPrice.toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`font-bold text-lg ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {profitPercent}%
                       </span>
                     </td>
-                    <td className="px-4 py-3">{item.currentQuantity} strips</td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
+                    <td className="px-6 py-4 font-semibold text-gray-800">{item.currentQuantity} strips</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-2">
                         {applicableDiscounts.slice(0, 2).map((d) => (
                           <span
                             key={d._id}
-                            className="text-xs px-2 py-1 rounded text-white"
+                            className="text-xs px-3 py-1.5 rounded-full text-white font-bold shadow-glossy-sm"
                             style={{ backgroundColor: d.colorCode }}
                           >
                             {d.discountPercentage}%
                           </span>
                         ))}
                         {applicableDiscounts.length > 2 && (
-                          <span className="text-xs px-2 py-1 bg-gray-200 rounded">+{applicableDiscounts.length - 2}</span>
+                          <span className="text-xs px-3 py-1.5 bg-gray-200 text-gray-700 rounded-full font-bold">+{applicableDiscounts.length - 2}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 flex gap-2">
+                    <td className="px-6 py-4 flex gap-2">
                       {hasPermission('manage_inventory') && (
                         <>
                           <button
                             onClick={() => handleEdit(item)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            className="p-2.5 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
+                            title="Edit item"
                           >
-                            <Edit2 size={16} />
+                            <Edit2 size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(item._id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            className="p-2.5 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
+                            title="Delete item"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={18} />
                           </button>
                         </>
                       )}
                       <button
                         onClick={() => handleExpandCartons(item._id)}
-                        className="p-1 text-purple-600 hover:bg-purple-50 rounded"
+                        className="p-2.5 text-purple-600 hover:bg-purple-100 hover:text-purple-700 rounded-lg transition-all duration-300 hover:scale-110 shadow-glossy-sm"
+                        title="View cartons"
                       >
-                        <ChevronDown size={16} style={{ transform: expandedCartons[item._id] ? 'rotate(180deg)' : '' }} />
+                        <ChevronDown size={18} style={{ transform: expandedCartons[item._id] ? 'rotate(180deg)' : '', transition: 'transform 0.3s' }} />
                       </button>
                     </td>
                   </tr>
@@ -475,19 +484,19 @@ export function InventoryManagement() {
               {filteredItems.map((item) => {
                 return expandedCartons[item._id] ? (
                   <tr key={`${item._id}-cartons`}>
-                    <td colSpan={8} className="px-4 py-4 bg-gray-50">
-                      <div className="space-y-3">
+                    <td colSpan={8} className="px-6 py-6 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 border-t-2 border-blue-200/50">
+                      <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                          <h3 className="font-semibold">Stock Cartons</h3>
+                          <h3 className="font-bold text-lg text-gray-900">📦 Stock Cartons</h3>
                           {hasPermission('manage_inventory') && (
                             <button
                               onClick={() => {
                                 setSelectedItemId(item._id);
                                 setShowCartonModal(true);
                               }}
-                              className="flex items-center gap-1 text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700"
+                              className="btn-glossy flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-4 py-2 text-xs font-bold shadow-glossy-sm"
                             >
-                              <Plus size={14} />
+                              <Plus size={16} />
                               Add Carton
                             </button>
                           )}
@@ -530,66 +539,66 @@ export function InventoryManagement() {
 
       {/* Add/Edit Medicine Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="border-b px-6 py-4 flex justify-between items-center sticky top-0 bg-white">
-              <h2 className="text-xl font-semibold">{editingItem ? 'Edit' : 'Add'} Medicine</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="glass-card max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-glossy-lg border border-white/20">
+            <div className="border-b border-white/20 px-8 py-6 flex justify-between items-center sticky top-0 bg-gradient-to-r from-blue-50/90 to-cyan-50/90 backdrop-blur">
+              <h2 className="text-2xl font-bold text-gradient bg-gradient-to-r from-blue-600 to-teal-600">{editingItem ? '✏️ Edit' : '➕ Add'} Medicine</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-lg transition-all duration-300">
                 <X size={24} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">SKU *</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">SKU *</label>
                   <input
                     type="text"
                     value={formData.sku}
                     onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="input-modern"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Medicine Name *</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Medicine Name *</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="input-modern"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="input-modern"
                   rows={2}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
                   <input
                     type="text"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="input-modern"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price (Cost) *</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Purchase Price (Cost) *</label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.unitCost}
                     onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="input-modern"
                     required
                   />
                 </div>
@@ -644,12 +653,12 @@ export function InventoryManagement() {
                 <span>Requires Prescription</span>
               </label>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg">
+              <div className="flex justify-end gap-4 pt-6 border-t border-white/20">
+                <button type="button" onClick={() => setShowModal(false)} className="btn-modern px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 font-semibold rounded-xl">
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  {editingItem ? 'Update' : 'Add'}
+                <button type="submit" className="btn-glossy px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl shadow-glossy-lg">
+                  {editingItem ? 'Update Medicine' : 'Add Medicine'}
                 </button>
               </div>
             </form>
@@ -659,19 +668,19 @@ export function InventoryManagement() {
 
       {/* Add Carton Modal */}
       {showCartonModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
-            <div className="border-b px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Add Carton</h2>
-              <button onClick={() => setShowCartonModal(false)} className="text-gray-400">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="glass-card max-w-md w-full mx-4 shadow-glossy-lg border border-white/20">
+            <div className="border-b border-white/20 px-8 py-6 flex justify-between items-center bg-gradient-to-r from-purple-50/90 to-pink-50/90 backdrop-blur">
+              <h2 className="text-2xl font-bold text-gradient bg-gradient-to-r from-purple-600 to-pink-600">📦 Add Carton</h2>
+              <button onClick={() => setShowCartonModal(false)} className="p-2 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-lg transition-all">
                 <X size={24} />
               </button>
             </div>
-            <form onSubmit={handleAddCarton} className="p-6 space-y-4">
-              <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                <p className="text-sm text-blue-900">
+            <form onSubmit={handleAddCarton} className="p-8 space-y-5">
+              <div className="glass-card bg-purple-50/50 p-4 border border-purple-200/50">
+                <p className="text-sm text-purple-900 font-semibold">
                   {cartonData.numberOfCartoons} Carton(s) × {cartonData.numberOfBoxesPerCarton} Boxes per Carton × {cartonData.stripsPerBox} Strips per Box =
-                  <strong className="ml-1">
+                  <strong className="ml-1 text-lg text-purple-600">
                     {parseInt(cartonData.numberOfCartoons.toString()) * parseInt(cartonData.numberOfBoxesPerCarton.toString()) * parseInt(cartonData.stripsPerBox.toString())} Total Strips
                   </strong>
                 </p>
@@ -682,7 +691,7 @@ export function InventoryManagement() {
                 value={cartonData.numberOfCartoons}
                 onChange={(e) => setCartonData({ ...cartonData, numberOfCartoons: parseInt(e.target.value) || 1 })}
                 placeholder="Number of Cartoons *"
-                className="w-full px-3 py-2 border rounded-lg"
+                className="input-modern"
                 required
               />
               <input
@@ -691,7 +700,7 @@ export function InventoryManagement() {
                 value={cartonData.numberOfBoxesPerCarton}
                 onChange={(e) => setCartonData({ ...cartonData, numberOfBoxesPerCarton: parseInt(e.target.value) || 1 })}
                 placeholder="Number of Boxes per Carton *"
-                className="w-full px-3 py-2 border rounded-lg"
+                className="input-modern"
                 required
               />
               <input
@@ -700,7 +709,7 @@ export function InventoryManagement() {
                 value={cartonData.stripsPerBox}
                 onChange={(e) => setCartonData({ ...cartonData, stripsPerBox: parseInt(e.target.value) || 1 })}
                 placeholder="Strips per Box *"
-                className="w-full px-3 py-2 border rounded-lg"
+                className="input-modern"
                 required
               />
               <input
@@ -709,21 +718,21 @@ export function InventoryManagement() {
                 value={cartonData.purchasePrice}
                 onChange={(e) => setCartonData({ ...cartonData, purchasePrice: parseFloat(e.target.value) })}
                 placeholder="Purchase Price per Carton"
-                className="w-full px-3 py-2 border rounded-lg"
+                className="input-modern"
               />
               <input
                 type="date"
                 value={cartonData.expirationDate}
                 onChange={(e) => setCartonData({ ...cartonData, expirationDate: e.target.value })}
                 placeholder="Expiration Date"
-                className="w-full px-3 py-2 border rounded-lg"
+                className="input-modern"
               />
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <button type="button" onClick={() => setShowCartonModal(false)} className="px-4 py-2 border rounded-lg">
+              <div className="flex justify-end gap-4 pt-6 border-t border-white/20">
+                <button type="button" onClick={() => setShowCartonModal(false)} className="btn-modern px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 font-semibold rounded-xl">
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                <button type="submit" className="btn-glossy px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold rounded-xl shadow-glossy-lg">
                   Add Cartoons
                 </button>
               </div>

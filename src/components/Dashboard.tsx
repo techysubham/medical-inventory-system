@@ -1,16 +1,16 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { io as ioClient } from 'socket.io-client';
-import { Package, Users, FileText, AlertTriangle, BarChart3, Settings } from 'lucide-react';
+import { Package, Users, FileText, AlertTriangle, BarChart3, Settings, Activity, Zap } from 'lucide-react';
 
 export function Dashboard() {
   const { user } = useAuth();
 
   const quickStats = [
-    { title: 'Total Medicines', value: '—', icon: Package, color: 'bg-blue-100 text-blue-700' },
-    { title: 'Active Suppliers', value: '—', icon: Users, color: 'bg-green-100 text-green-700' },
-    { title: 'Pending Orders', value: '—', icon: FileText, color: 'bg-purple-100 text-purple-700' },
-    { title: 'Alerts', value: '—', icon: AlertTriangle, color: 'bg-red-100 text-red-700' },
+    { title: 'Total Medicines', value: '—', icon: Package, gradient: 'from-blue-500 to-cyan-500', lightGradient: 'from-blue-100 to-cyan-100' },
+    { title: 'Active Suppliers', value: '—', icon: Users, gradient: 'from-emerald-500 to-teal-500', lightGradient: 'from-emerald-100 to-teal-100' },
+    { title: 'Pending Orders', value: '—', icon: FileText, gradient: 'from-purple-500 to-pink-500', lightGradient: 'from-purple-100 to-pink-100' },
+    { title: 'Alerts', value: '—', icon: AlertTriangle, gradient: 'from-red-500 to-orange-500', lightGradient: 'from-red-100 to-orange-100' },
   ];
 
   const [alertsCount, setAlertsCount] = useState(0);
@@ -84,90 +84,142 @@ export function Dashboard() {
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-lg shadow-lg p-8 text-white">
-        <h1 className="text-4xl font-bold mb-2">Welcome, {user?.firstName}!</h1>
-        <p className="text-blue-100">Medical Inventory Management System</p>
-        <div className="mt-4 text-sm text-blue-100">
-          <p>Role: <span className="font-semibold capitalize">{user?.role}</span></p>
-          <p>Email: {user?.email}</p>
+    <div className="space-y-8 pb-6">
+      {/* Welcome Section - Enhanced with Glossy Effect */}
+      <div className="relative overflow-hidden rounded-3xl p-8 text-white shadow-glossy-lg">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-600 opacity-90"></div>
+        <div className="absolute inset-0 bg-gradient-glossy"></div>
+        <div className="relative">
+          <div className="mb-6 inline-block">
+            <div className="badge-modern bg-white/20 text-white border-white/30">
+              <Activity size={18} />
+              <span>Welcome Back</span>
+            </div>
+          </div>
+          <h1 className="text-5xl font-bold mb-2 tracking-tight">Hello, {user?.firstName}! 👋</h1>
+          <p className="text-blue-50 text-lg mb-6">Medical Inventory Management System</p>
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            <div className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20">
+              <p className="text-blue-100 text-sm mb-1">Role</p>
+              <p className="text-white font-semibold capitalize text-lg">{user?.role}</p>
+            </div>
+            <div className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20">
+              <p className="text-blue-100 text-sm mb-1">Email</p>
+              <p className="text-white font-semibold truncate text-sm">{user?.email}</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Quick Stats */}
       <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Stats</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+          <BarChart3 size={32} className="text-blue-600" />
+          <span>Quick Stats</span>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickStats.map((stat, index) => {
             const Icon = stat.icon;
+            const bgColors = [
+              'bg-gradient-to-br from-blue-50 to-blue-100/50',
+              'bg-gradient-to-br from-emerald-50 to-emerald-100/50',
+              'bg-gradient-to-br from-purple-50 to-purple-100/50',
+              'bg-gradient-to-br from-rose-50 to-rose-100/50'
+            ];
             return (
-              <div key={index} className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-gray-600 text-sm">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{
-                      stat.title === 'Alerts' ? alertsCount
-                      : stat.title === 'Total Medicines' ? totalMedicines
-                      : stat.title === 'Active Suppliers' ? activeSuppliers
-                      : stat.title === 'Pending Orders' ? pendingOrders
-                      : stat.value
-                    }</p>
+              <div key={index} className={`stat-card group ${bgColors[index]} border-l-4 ${
+                index === 0 ? 'border-blue-500' :
+                index === 1 ? 'border-emerald-500' :
+                index === 2 ? 'border-purple-500' :
+                'border-rose-500'
+              }`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
                   </div>
-                  <div className={`p-3 rounded-lg ${stat.color}`}>
+                  <div className={`icon-box bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}>
                     <Icon size={24} />
                   </div>
                 </div>
+                <p className={`stat-value bg-gradient-to-r ${stat.gradient}`}>
+                  {stat.title === 'Alerts' ? alertsCount
+                  : stat.title === 'Total Medicines' ? totalMedicines
+                  : stat.title === 'Active Suppliers' ? activeSuppliers
+                  : stat.title === 'Pending Orders' ? pendingOrders
+                  : stat.value
+                  }
+                </p>
               </div>
             );
           })}
         </div>
       </div>
 
-      
-
       {/* Real-time Warnings */}
       <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Real-time Warnings</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-start justify-between">
+        <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+          <AlertTriangle size={32} className="text-orange-500" />
+          <span>Real-time Warnings</span>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="stat-card group bg-gradient-to-br from-yellow-50 to-yellow-100/50 border-l-4 border-yellow-500">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-gray-600 text-sm">Low Stock Items</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{lowStockCount}</p>
+                <p className="text-gray-600 text-sm font-medium">Low Stock Items</p>
               </div>
-              <div className="p-3 rounded-lg bg-yellow-100 text-yellow-700">
+              <div className="icon-box bg-gradient-to-br from-yellow-400 to-orange-500 text-white shadow-lg">
                 <AlertTriangle size={24} />
               </div>
             </div>
+            <p className="stat-value bg-gradient-to-r from-yellow-500 to-orange-500">{lowStockCount}</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-start justify-between">
+          <div className="stat-card group bg-gradient-to-br from-red-50 to-red-100/50 border-l-4 border-red-500">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-gray-600 text-sm">Expiring Soon</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{expiringSoonCount}</p>
+                <p className="text-gray-600 text-sm font-medium">Expiring Soon</p>
               </div>
-              <div className="p-3 rounded-lg bg-orange-100 text-orange-700">
+              <div className="icon-box bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-lg">
                 <BarChart3 size={24} />
               </div>
             </div>
+            <p className="stat-value bg-gradient-to-r from-orange-500 to-red-500">{expiringSoonCount}</p>
           </div>
-
-          
         </div>
       </div>
 
-      {/* Information Section */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">ℹ️ Getting Started</h3>
-        <ul className="text-sm text-gray-700 space-y-1">
-          <li>• Navigate using the sidebar menu to access different features</li>
-          <li>• Use Inventory Management to add, edit, or delete medicines</li>
-          <li>• Manage suppliers and purchase orders as needed</li>
-          <li>• Generate and track invoices for customers</li>
-          {user?.role === 'superadmin' && <li>• Access User Management to create and manage user accounts</li>}
-        </ul>
+      {/* Information Section - Enhanced */}
+      <div className="glass-card p-8 border-l-4 border-blue-500">
+        <div className="flex items-start gap-4">
+          <div className="text-3xl">ℹ️</div>
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Getting Started</h3>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3 text-gray-700">
+                <span className="text-blue-500 font-bold text-lg mt-0.5">→</span>
+                <span>Navigate using the sidebar menu to access different features</span>
+              </li>
+              <li className="flex items-start gap-3 text-gray-700">
+                <span className="text-blue-500 font-bold text-lg mt-0.5">→</span>
+                <span>Use Inventory Management to add, edit, or delete medicines</span>
+              </li>
+              <li className="flex items-start gap-3 text-gray-700">
+                <span className="text-blue-500 font-bold text-lg mt-0.5">→</span>
+                <span>Manage suppliers and purchase orders as needed</span>
+              </li>
+              <li className="flex items-start gap-3 text-gray-700">
+                <span className="text-blue-500 font-bold text-lg mt-0.5">→</span>
+                <span>Generate and track invoices for customers</span>
+              </li>
+              {user?.role === 'superadmin' && (
+                <li className="flex items-start gap-3 text-gray-700">
+                  <span className="text-blue-500 font-bold text-lg mt-0.5">→</span>
+                  <span>Access User Management to create and manage user accounts</span>
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,3 +1,103 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom Glassmorphism & Modern UI Utilities */
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-md bg-white/80 border border-white/20 rounded-2xl;
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-md bg-gray-900/40 border border-white/10 rounded-2xl;
+  }
+
+  .btn-modern {
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300 ease-out hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl;
+  }
+
+  .btn-glossy {
+    @apply btn-modern relative overflow-hidden;
+  }
+
+  .btn-glossy::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-glossy opacity-0 hover:opacity-100 transition-opacity duration-300;
+  }
+
+  .icon-box {
+    @apply w-12 h-12 rounded-xl flex items-center justify-center font-bold transition-all duration-300 hover:scale-110;
+  }
+
+  .stat-card {
+    @apply glass-card p-6 hover:shadow-glossy-lg transition-all duration-300 hover:-translate-y-1;
+  }
+
+  .stat-value {
+    @apply text-4xl font-bold bg-gradient-to-r bg-clip-text text-transparent;
+  }
+
+  .input-modern {
+    @apply w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300;
+  }
+
+  .divider-gradient {
+    @apply h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-transparent rounded-full;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r bg-clip-text text-transparent;
+  }
+
+  .badge-modern {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm backdrop-blur-md border border-white/20;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-glossy-lg hover:scale-105;
+  }
+
+  /* Smooth scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+/* Animations */
+@layer utilities {
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 8s ease infinite;
+  }
+
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+}
+
+/* Root styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+body {
+  @apply bg-gradient-to-br from-slate-50 via-white to-slate-50;
+}
