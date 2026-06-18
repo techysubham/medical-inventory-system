@@ -151,24 +151,67 @@ export function InvoiceGeneration() {
     }
   };
 
-  const addSelectedItem = () => {
+  const addSelectedItem = async () => {
     if (!selectedItemId) return;
     const it = inventory.find((i) => i._id === selectedItemId) || inventory.find((i) => i.id === selectedItemId);
     if (!it) return;
-    // default qty 1, unitPrice from item.price or item.mrp
-    const newItem = {
-      itemId: it._id || it.id,
-      name: it.name || it.title,
-      manufacturer: it.brand || it.manufacturer || it.manufacturerShort || '',
-      qty: 1,
-      unitPrice: it.sellingPrice ?? it.price ?? it.mrp ?? 0,
-      gstPercent: it.gst ?? 5,
-      pack: it.pack,
-      hsn: it.hsn,
-      batch: it.batchNumber || it.batch || it.defaultBatch || '',
-      expiry: it.expirationDate ? (it.expirationDate.split ? it.expirationDate.split('T')[0] : it.expirationDate) : (it.defaultExpiry || ''),
-    };
-    setInvoiceItems((s) => [...s, newItem]);
+
+    try {
+      // Fetch available batches for FIFO selection
+      const res = await fetch(`${API_URL}/stock-batches/available/${selectedItemId}`, { headers });
+      let batch = null;
+      let expiry = null;
+
+      if (res.ok) {
+        const batches = await res.json();
+        if (batches.length > 0) {
+          // Get the first batch (oldest/expiring soonest - FIFO)
+          batch = batches[0];
+          expiry = batch.expiryDate ? batch.expiryDate.split('T')[0] : '';
+          const daysLeft = batch.daysUntilExpiry;
+          
+          // Show alert if batch is expiring soon
+          if (daysLeft < 30) {
+            console.warn(`⚠️ Batch ${batch.batchNumber} expires in ${daysLeft} days - prioritizing for sale`);
+          }
+        }
+      }
+
+      // default qty 1, unitPrice from item.price or item.mrp
+      const newItem = {
+        itemId: it._id || it.id,
+        name: it.name || it.title,
+        manufacturer: it.brand || it.manufacturer || it.manufacturerShort || '',
+        qty: 1,
+        unitPrice: it.sellingPrice ?? it.price ?? it.mrp ?? 0,
+        gstPercent: it.gst ?? 5,
+        pack: it.pack,
+        hsn: it.hsn,
+        batch: batch?.batchNumber || it.batchNumber || it.batch || it.defaultBatch || '',
+        expiry: expiry || (it.expirationDate ? (it.expirationDate.split ? it.expirationDate.split('T')[0] : it.expirationDate) : (it.defaultExpiry || '')),
+        batchId: batch?._id || null,
+      };
+      setInvoiceItems((s) => [...s, newItem]);
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+      // Fallback to old method if batch fetch fails
+      const it = inventory.find((i) => i._id === selectedItemId) || inventory.find((i) => i.id === selectedItemId);
+      if (it) {
+        const newItem = {
+          itemId: it._id || it.id,
+          name: it.name || it.title,
+          manufacturer: it.brand || it.manufacturer || it.manufacturerShort || '',
+          qty: 1,
+          unitPrice: it.sellingPrice ?? it.price ?? it.mrp ?? 0,
+          gstPercent: it.gst ?? 5,
+          pack: it.pack,
+          hsn: it.hsn,
+          batch: it.batchNumber || it.batch || it.defaultBatch || '',
+          expiry: it.expirationDate ? (it.expirationDate.split ? it.expirationDate.split('T')[0] : it.expirationDate) : (it.defaultExpiry || ''),
+        };
+        setInvoiceItems((s) => [...s, newItem]);
+      }
+    }
   };
 
   const deleteInvoice = async (id: string) => {

@@ -15,6 +15,7 @@ import purchaseOrderRoutes from './routes/purchase-orders.js';
 import alertRoutes from './routes/alerts.js';
 import reportRoutes from './routes/reports.js';
 import settingsRoutes from './routes/settings.js';
+import stockBatchRoutes from './routes/stock-batches.js';
 import { startScheduler } from './services/alertDetector.js';
 import statsRoutes from './routes/stats.js';
 
@@ -90,6 +91,7 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/stock-batches', stockBatchRoutes);
 app.use('/api/stats', statsRoutes);
 
 // Health check

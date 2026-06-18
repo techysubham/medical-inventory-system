@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { Plus, Search, Edit2, Trash2, X, ChevronDown, Package } from 'lucide-react';
+import { BatchManagement } from './BatchManagement';
+import { AddStockModal } from './AddStockModal';
 
 const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const normalizedBase = rawApi.replace(/\/+$/g, '');
@@ -18,6 +20,7 @@ interface InventoryItem {
   requiresPrescription: boolean;
   expirationDate?: string;
   description?: string;
+  location?: string;
   status: 'active' | 'inactive';
 }
 
@@ -95,6 +98,23 @@ export function InventoryManagement() {
       fetchMedicineDiscounts();
     }
   }, [token]);
+
+  // Listen for inventory change events triggered by batch/carton operations
+  useEffect(() => {
+    const handler = (e: any) => {
+      try {
+        fetchItems();
+        if (e && e.detail && e.detail.itemId) {
+          fetchCartons(e.detail.itemId);
+        }
+      } catch (err) {
+        console.error('Failed to handle inventory:changed event', err);
+      }
+    };
+
+    window.addEventListener('inventory:changed', handler as EventListener);
+    return () => window.removeEventListener('inventory:changed', handler as EventListener);
+  }, []);
 
   const fetchMedicineDiscounts = async () => {
     try {
@@ -487,7 +507,7 @@ export function InventoryManagement() {
                     <td colSpan={8} className="px-6 py-6 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 border-t-2 border-blue-200/50">
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                          <h3 className="font-bold text-lg text-gray-900">📦 Stock Cartons</h3>
+                          <h3 className="font-bold text-lg text-gray-900">📦 Stock Management</h3>
                           {hasPermission('manage_inventory') && (
                             <button
                               onClick={() => {
@@ -501,10 +521,10 @@ export function InventoryManagement() {
                                 });
                                 setShowCartonModal(true);
                               }}
-                              className="btn-glossy flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-4 py-2 text-xs font-bold shadow-glossy-sm"
+                              className="btn-glossy flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-4 py-2 text-xs font-bold shadow-glossy-sm"
                             >
                               <Plus size={16} />
-                              Add Carton
+                              Add Stock
                             </button>
                           )}
                         </div>
@@ -534,6 +554,9 @@ export function InventoryManagement() {
                           </div>
                         )}
                       </div>
+                      
+                      {/* Batch Management Section */}
+                      <BatchManagement itemId={item._id} itemName={item.name} />
                     </td>
                   </tr>
                 ) : null;
@@ -673,95 +696,33 @@ export function InventoryManagement() {
         </div>
       )}
 
-      {/* Add Carton Modal */}
-      {showCartonModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="glass-card max-w-md w-full mx-4 shadow-glossy-lg border border-white/20">
-            <div className="border-b border-white/20 px-8 py-6 flex justify-between items-center bg-gradient-to-r from-purple-50/90 to-pink-50/90 backdrop-blur">
-              <h2 className="text-2xl font-bold text-gradient bg-gradient-to-r from-purple-600 to-pink-600">📦 Add Carton</h2>
-              <button onClick={() => setShowCartonModal(false)} className="p-2 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-lg transition-all">
-                <X size={24} />
-              </button>
-            </div>
-            <form onSubmit={handleAddCarton} className="p-8 space-y-5">
-              <div className="glass-card bg-purple-50/50 p-4 border border-purple-200/50">
-                <p className="text-sm text-purple-900 font-semibold">
-                  {cartonData.numberOfCartoons} Carton(s) × {cartonData.numberOfBoxesPerCarton} Boxes per Carton × {cartonData.stripsPerBox} Strips per Box =
-                  <strong className="ml-1 text-lg text-purple-600">
-                    {parseInt(cartonData.numberOfCartoons.toString()) * parseInt(cartonData.numberOfBoxesPerCarton.toString()) * parseInt(cartonData.stripsPerBox.toString())} Total Strips
-                  </strong>
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Number of Cartons *</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={cartonData.numberOfCartoons}
-                  onChange={(e) => setCartonData({ ...cartonData, numberOfCartoons: parseInt(e.target.value) || 1 })}
-                  className="input-modern"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Number of Boxes per Carton *</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={cartonData.numberOfBoxesPerCarton}
-                  onChange={(e) => setCartonData({ ...cartonData, numberOfBoxesPerCarton: parseInt(e.target.value) || 1 })}
-                  className="input-modern"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Strips per Box *</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={cartonData.stripsPerBox}
-                  onChange={(e) => setCartonData({ ...cartonData, stripsPerBox: parseInt(e.target.value) || 1 })}
-                  className="input-modern"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Purchase Price per Carton</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={cartonData.purchasePrice}
-                  onChange={(e) => setCartonData({ ...cartonData, purchasePrice: parseFloat(e.target.value) })}
-                  className="input-modern"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Expiration Date</label>
-                <input
-                  type="date"
-                  value={cartonData.expirationDate}
-                  onChange={(e) => setCartonData({ ...cartonData, expirationDate: e.target.value })}
-                  className="input-modern"
-                />
-              </div>
-
-              <div className="flex justify-end gap-4 pt-6 border-t border-white/20">
-                <button type="button" onClick={() => setShowCartonModal(false)} className="btn-modern px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 font-semibold rounded-xl">
-                  Cancel
-                </button>
-                <button type="submit" className="btn-glossy px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold rounded-xl shadow-glossy-lg">
-                  Add Cartoons
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Unified Add Stock Modal (Carton + Batch) */}
+      <AddStockModal
+        isOpen={showCartonModal}
+        itemId={selectedItemId || ''}
+        itemName={
+          selectedItemId
+            ? items.find((i) => i._id === selectedItemId)?.name || 'Item'
+            : 'Item'
+        }
+        itemLocation={
+          selectedItemId
+            ? items.find((i) => i._id === selectedItemId)?.location || ''
+            : ''
+        }
+        defaultExpiryDate={cartonData.expirationDate}
+        onClose={() => {
+          setShowCartonModal(false);
+          setSelectedItemId(null);
+        }}
+        onSuccess={() => {
+          if (selectedItemId) {
+            fetchCartons(selectedItemId);
+          }
+          // Refresh items list so top-level `currentQuantity` updates
+          fetchItems();
+        }}
+      />
     </div>
   );
 }

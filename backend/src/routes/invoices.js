@@ -1,6 +1,8 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { Invoice, InvoiceItem } from '../models/Invoice.js';
 import InventoryItem from '../models/InventoryItem.js';
+import StockBatch from '../models/StockBatch.js';
 import { authenticate } from '../middleware/auth.js';
 import { sendInvoiceEmail } from '../services/email.js';
 
@@ -45,7 +47,7 @@ router.post('/', authenticate, async (req, res) => {
 
     await invoice.save();
 
-    // Create invoice items
+    // Create invoice items with FIFO batch allocation
     if (items && Array.isArray(items)) {
       for (const item of items) {
         const qty = item.quantityStrips || item.qty || 1;
@@ -54,6 +56,42 @@ router.post('/', authenticate, async (req, res) => {
         const gstAmount = (item.gstAmount ?? ((qty * unitPrice * (gstPercent / 100))));
         const lineTotal = (item.lineTotal ?? ((qty * unitPrice) + gstAmount));
 
+        // Allocate from batches using FIFO
+        let batchUsed = null;
+        let batchExpiry = null;
+
+        if (item.itemId) {
+          try {
+            // Get FIFO allocation
+            const allocation = await StockBatch.allocateStock(item.itemId, qty);
+            
+            if (allocation && allocation.length > 0) {
+              // Use the first batch for display (oldest one)
+              const firstBatch = allocation[0];
+              batchUsed = firstBatch.batchNumber;
+              batchExpiry = firstBatch.expiryDate;
+              
+              // Update all allocated batches
+              for (const allocEntry of allocation) {
+                await StockBatch.findByIdAndUpdate(
+                  allocEntry.batchId,
+                  { 
+                    $inc: { 
+                      quantityAvailable: -allocEntry.quantityAllocated,
+                      quantitySold: allocEntry.quantityAllocated
+                    }
+                  }
+                );
+              }
+            }
+          } catch (batchErr) {
+            console.warn(`Batch allocation failed for item ${item.itemId}:`, batchErr.message);
+            // Fall back to using provided batch info if batch allocation fails
+            batchUsed = item.batch || null;
+            batchExpiry = item.expiry || null;
+          }
+        }
+
         const invoiceItemData = {
           invoiceId: invoice._id,
           itemId: item.itemId,
@@ -61,8 +99,8 @@ router.post('/', authenticate, async (req, res) => {
           manufacturer: item.manufacturer,
           pack: item.pack,
           hsn: item.hsn,
-          batch: item.batch,
-          expiry: item.expiry,
+          batch: batchUsed || item.batch,
+          expiry: batchExpiry || item.expiry,
           gstPercent,
           gstAmount,
           quantityStrips: qty,
@@ -75,7 +113,7 @@ router.post('/', authenticate, async (req, res) => {
         const invoiceItem = new InvoiceItem(invoiceItemData);
         await invoiceItem.save();
 
-        // Update inventory (reduce quantity)
+        // Update inventory item (reduce total quantity)
         if (item.itemId) {
           await InventoryItem.findByIdAndUpdate(
             item.itemId,
