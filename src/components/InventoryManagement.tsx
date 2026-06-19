@@ -49,10 +49,14 @@ interface StockBox {
 }
 
 export function InventoryManagement() {
-  const { token, hasPermission } = useAuth();
+  const { token, hasPermission, hasRole, user } = useAuth();
   const { currencySymbol } = useSettings();
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
+
+  // Check if user is admin or superadmin
+  const isAdminOrSuper = user?.isSuperAdmin || user?.role === 'superadmin' || user?.role === 'admin';
   const [medicineDiscounts, setMedicineDiscounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,15 +67,19 @@ export function InventoryManagement() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [cartons, setCartons] = useState<StockCarton[]>([]);
   const [boxes, setBoxes] = useState<Record<string, StockBox[]>>({});
+  const [skuSuggestion, setSkuSuggestion] = useState<string>('');
 
   const [formData, setFormData] = useState({
     sku: '',
     name: '',
     description: '',
     category: '',
+    supplier: '',
     currentQuantity: 0,
     unitCost: 0,
     sellingPrice: 0,
+    tabletsPerStrip: 1,
+    stripsPerBox: 1,
     requiresPrescription: false,
     expirationDate: '',
     status: 'active' as const,
@@ -96,6 +104,7 @@ export function InventoryManagement() {
       fetchItems();
       fetchDiscounts();
       fetchMedicineDiscounts();
+      fetchSuppliers();
     }
   }, [token]);
 
@@ -154,6 +163,40 @@ export function InventoryManagement() {
     }
   };
 
+  const fetchSuppliers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/suppliers`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setSuppliers(Array.isArray(data) ? data : []);
+      } else {
+        setSuppliers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+      setSuppliers([]);
+    }
+  };
+  // Auto-generate SKU suggestion when supplier and category change
+  useEffect(() => {
+    if (formData.supplier && formData.category) {
+      const selectedSupplier = suppliers.find((s) => s._id === formData.supplier);
+      if (selectedSupplier && selectedSupplier.supplierCode) {
+        const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+        const categoryShort = formData.category.toUpperCase().slice(0, 3); // First 3 letters
+        const suggestion = `${selectedSupplier.supplierCode}-${categoryShort}-${timestamp}`;
+        setSkuSuggestion(suggestion);
+      }
+    } else {
+      setSkuSuggestion('');
+    }
+  }, [formData.supplier, formData.category, suppliers]);
+
+  const applySuggestedSKU = () => {
+    if (skuSuggestion) {
+      setFormData({ ...formData, sku: skuSuggestion });
+    }
+  };
   const fetchCartons = async (itemId: string) => {
     try {
       const response = await fetch(`${API_URL}/inventory/${itemId}/cartons`, { headers });
@@ -328,9 +371,12 @@ export function InventoryManagement() {
       name: item.name,
       description: item.description || '',
       category: item.category,
+      supplier: item.supplier || '',
       currentQuantity: item.currentQuantity,
       unitCost: item.unitCost,
       sellingPrice: item.sellingPrice,
+      tabletsPerStrip: item.tabletsPerStrip || 1,
+      stripsPerBox: item.stripsPerBox || 1,
       requiresPrescription: item.requiresPrescription,
       expirationDate: formattedExpiry,
       status: item.status,
@@ -355,14 +401,18 @@ export function InventoryManagement() {
       name: '',
       description: '',
       category: '',
+      supplier: '',
       currentQuantity: 0,
       unitCost: 0,
       sellingPrice: 0,
+      tabletsPerStrip: 1,
+      stripsPerBox: 1,
       requiresPrescription: false,
       expirationDate: '',
       status: 'active',
       discountTierId: '',
     });
+    setSkuSuggestion('');
     setEditingItem(null);
   };
 
@@ -432,8 +482,9 @@ export function InventoryManagement() {
                 <th className="px-6 py-4 text-left font-bold text-gray-800">SKU</th>
                 <th className="px-6 py-4 text-left font-bold text-gray-800">Name</th>
                 <th className="px-6 py-4 text-left font-bold text-gray-800">Category</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-800">Cost/Sell</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-800">Profit %</th>
+                {isAdminOrSuper && <th className="px-6 py-4 text-left font-bold text-gray-800">Cost/Sell</th>}
+                {isAdminOrSuper && <th className="px-6 py-4 text-left font-bold text-gray-800">Profit %</th>}
+                {!isAdminOrSuper && <th className="px-6 py-4 text-left font-bold text-gray-800">Selling Price</th>}
                 <th className="px-6 py-4 text-left font-bold text-gray-800">Stock</th>
                 <th className="px-6 py-4 text-left font-bold text-gray-800">Discounts</th>
                 <th className="px-6 py-4 text-left font-bold text-gray-800">Actions</th>
@@ -448,12 +499,19 @@ export function InventoryManagement() {
                     <td className="px-6 py-4 font-bold text-gray-900 group-hover:text-blue-600">{item.sku}</td>
                     <td className="px-6 py-4 font-medium text-gray-800">{item.name}</td>
                     <td className="px-6 py-4 text-gray-600 badge-modern bg-gray-100 text-gray-700 border-gray-300">{item.category}</td>
-                    <td className="px-6 py-4 font-medium">{currencySymbol}{item.unitCost.toFixed(2)} / {currencySymbol}{item.sellingPrice.toFixed(2)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`font-bold text-lg ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {profitPercent}%
-                      </span>
-                    </td>
+                    {isAdminOrSuper && (
+                      <>
+                        <td className="px-6 py-4 font-medium">{currencySymbol}{item.unitCost.toFixed(2)} / {currencySymbol}{item.sellingPrice.toFixed(2)}</td>
+                        <td className="px-6 py-4">
+                          <span className={`font-bold text-lg ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {profitPercent}%
+                          </span>
+                        </td>
+                      </>
+                    )}
+                    {!isAdminOrSuper && (
+                      <td className="px-6 py-4 font-medium">{currencySymbol}{item.sellingPrice.toFixed(2)}</td>
+                    )}
                     <td className="px-6 py-4 font-semibold text-gray-800">{item.currentQuantity} strips</td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-2">
@@ -580,15 +638,63 @@ export function InventoryManagement() {
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">SKU *</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Supplier *</label>
+                  <select
+                    value={formData.supplier}
+                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                    className="input-modern"
+                    required
+                  >
+                    <option value="">-- Select Supplier --</option>
+                    {suppliers.filter(s => s.status === 'active').map((supplier) => (
+                      <option key={supplier._id} value={supplier._id}>
+                        {supplier.name} ({supplier.supplierCode})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="input-modern"
+                    placeholder="e.g., Dental, Cardiovascular"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2">SKU *</label>
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={formData.sku}
                     onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    className="input-modern"
+                    className="input-modern flex-1"
                     required
+                    placeholder="Auto-generated or manual"
                   />
+                  {skuSuggestion && (
+                    <button
+                      type="button"
+                      onClick={applySuggestedSKU}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm font-semibold whitespace-nowrap"
+                      title={`Apply suggested SKU: ${skuSuggestion}`}
+                    >
+                      Use: {skuSuggestion}
+                    </button>
+                  )}
                 </div>
+                {skuSuggestion && (
+                  <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                    💡 Suggested SKU: <span className="font-mono font-bold">{skuSuggestion}</span> (Supplier Code - Category - Timestamp)
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Medicine Name *</label>
                   <input
@@ -599,6 +705,7 @@ export function InventoryManagement() {
                     required
                   />
                 </div>
+                <div></div>
               </div>
 
               <div>
@@ -612,24 +719,42 @@ export function InventoryManagement() {
               </div>
 
               <div className="grid grid-cols-2 gap-6">
+                <div></div>
+                {isAdminOrSuper && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Purchase Price (Cost) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.unitCost}
+                      onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) })}
+                      className="input-modern"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Tablets Per Strip *</label>
                   <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    type="number"
+                    min="1"
+                    value={formData.tabletsPerStrip}
+                    onChange={(e) => setFormData({ ...formData, tabletsPerStrip: parseInt(e.target.value) || 1 })}
                     className="input-modern"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Purchase Price (Cost) *</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Strips Per Box</label>
                   <input
                     type="number"
-                    step="0.01"
-                    value={formData.unitCost}
-                    onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) })}
+                    min="1"
+                    value={formData.stripsPerBox}
+                    onChange={(e) => setFormData({ ...formData, stripsPerBox: parseInt(e.target.value) || 1 })}
                     className="input-modern"
-                    required
                   />
                 </div>
               </div>

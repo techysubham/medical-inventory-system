@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { BarChart3, TrendingUp, Package, DollarSign, Euro, PoundSterling, IndianRupee } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, DollarSign, Euro, PoundSterling, IndianRupee, Wallet } from 'lucide-react';
 
 const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const normalizedBase = rawApi.replace(/\/+$/g, '');
@@ -14,10 +14,17 @@ interface Stats {
   totalRevenue: number;
 }
 
+interface PaymentMethodStat {
+  method: string;
+  count: number;
+  total: number;
+}
+
 export function ReportsAnalytics() {
   const { token } = useAuth();
   const { currencySymbol, settings } = useSettings();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [paymentStats, setPaymentStats] = useState<PaymentMethodStat[]>([]);
   const [loading, setLoading] = useState(true);
 
   const headers = {
@@ -26,7 +33,10 @@ export function ReportsAnalytics() {
   };
 
   useEffect(() => {
-    if (token) fetchStats();
+    if (token) {
+      fetchStats();
+      fetchPaymentStats();
+    }
   }, [token]);
 
   const fetchStats = async () => {
@@ -45,6 +55,18 @@ export function ReportsAnalytics() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPaymentStats = async () => {
+    try {
+      const response = await fetch(`${API_URL}/reports/payment-methods`, { headers });
+      if (!response.ok) throw new Error('Failed to fetch payment stats');
+      const data = await response.json();
+      setPaymentStats(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error:', error);
+      setPaymentStats([]);
     }
   };
 
@@ -99,9 +121,29 @@ export function ReportsAnalytics() {
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
-        <div className="text-center py-12 text-gray-500">
-          <p>Detailed analytics and charts coming soon</p>
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Wallet size={24} className="text-indigo-600" />
+          Payment Method Breakdown
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {paymentStats && paymentStats.length > 0 ? (
+            paymentStats.map((stat, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-gray-700">{stat.method}</h3>
+                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">{stat.count} invoices</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900 mb-1">{currencySymbol}{stat.total.toFixed(2)}</div>
+                <div className="text-xs text-gray-500">
+                  {stat.count > 0 ? `Avg: ${currencySymbol}${(stat.total / stat.count).toFixed(2)}` : 'No transactions'}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-3 text-center py-8 text-gray-500">
+              <p>No payment data available</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

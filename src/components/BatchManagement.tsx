@@ -119,6 +119,10 @@ export function BatchManagement({ itemId, itemName }: BatchManagementProps) {
       });
 
       if (!res.ok) throw new Error('Failed to delete batch');
+      
+      // Wait 500ms for backend to complete currentQuantity recalculation
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       await fetchBatches();
       try {
         window.dispatchEvent(new CustomEvent('inventory:changed', { detail: { itemId } }));

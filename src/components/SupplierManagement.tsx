@@ -9,6 +9,7 @@ const API_URL = normalizedBase.endsWith('/api') ? normalizedBase : normalizedBas
 interface Supplier {
   _id: string;
   name: string;
+  supplierCode?: string;
   email?: string;
   phone?: string;
   address?: string;
@@ -26,6 +27,7 @@ export function SupplierManagement() {
 
   const [formData, setFormData] = useState({
     name: '',
+    supplierCode: '',
     email: '',
     phone: '',
     address: '',
@@ -101,6 +103,7 @@ export function SupplierManagement() {
     setEditingSupplier(supplier);
     setFormData({
       name: supplier.name,
+      supplierCode: supplier.supplierCode || '',
       email: supplier.email || '',
       phone: supplier.phone || '',
       address: supplier.address || '',
@@ -111,7 +114,7 @@ export function SupplierManagement() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', phone: '', address: '', city: '', status: 'active' });
+    setFormData({ name: '', supplierCode: '', email: '', phone: '', address: '', city: '', status: 'active' });
     setEditingSupplier(null);
   };
 
@@ -146,6 +149,7 @@ export function SupplierManagement() {
           <thead className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-gray-200/50">
             <tr>
               <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Name</th>
+              <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Code</th>
               <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Email</th>
               <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">Phone</th>
               <th className="px-6 py-4 text-left text-sm font-bold text-gray-800">City</th>
@@ -157,6 +161,7 @@ export function SupplierManagement() {
             {suppliers.map((supplier) => (
               <tr key={supplier._id} className="hover:bg-blue-50/50 transition-all duration-300 group">
                 <td className="px-6 py-4 text-sm font-bold text-gray-900 group-hover:text-blue-600">{supplier.name}</td>
+                <td className="px-6 py-4 text-sm font-mono text-blue-600 font-bold">{supplier.supplierCode || '-'}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{supplier.email || '-'}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{supplier.phone || '-'}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{supplier.city || '-'}</td>
@@ -197,6 +202,7 @@ export function SupplierManagement() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Supplier Name *" className="w-full px-4 py-2 border rounded-lg" required />
+              <input type="text" value={formData.supplierCode} onChange={(e) => setFormData({...formData, supplierCode: e.target.value})} placeholder="Supplier Code (e.g., AZO, BAY, CIPLA) *" className="w-full px-4 py-2 border rounded-lg font-mono" required />
               <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="Email" className="w-full px-4 py-2 border rounded-lg" />
               <input type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="Phone" className="w-full px-4 py-2 border rounded-lg" />
               <input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} placeholder="Address" className="w-full px-4 py-2 border rounded-lg" />

@@ -31,6 +31,37 @@ router.get('/stats', authenticate, requirePermission('view_reports'), async (req
   }
 });
 
+// Get payment method statistics
+router.get('/payment-methods', authenticate, requirePermission('view_reports'), async (req, res) => {
+  try {
+    const paymentStats = await Invoice.aggregate([
+      {
+        $group: {
+          _id: '$paymentMethod',
+          count: { $sum: 1 },
+          total: { $sum: '$totalAmount' }
+        }
+      },
+      { $sort: { total: -1 } }
+    ]);
+
+    // Ensure all payment methods are represented
+    const methods = ['Cash', 'UPI', 'Card'];
+    const result = methods.map(method => {
+      const found = paymentStats.find(stat => stat._id === method);
+      return {
+        method,
+        count: found?.count || 0,
+        total: found?.total || 0
+      };
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get inventory report
 router.get('/inventory', authenticate, requirePermission('view_reports'), async (req, res) => {
   try {

@@ -40,6 +40,7 @@ export function InvoiceGeneration() {
     customerPhone: '',
     totalAmount: 0,
     paymentStatus: 'unpaid' as const,
+    paymentMethod: 'Cash' as const,
   });
 
   const [inventory, setInventory] = useState<any[]>([]);
@@ -102,29 +103,55 @@ export function InvoiceGeneration() {
       return;
     }
 
-    // calculate totals
-    const subtotal = invoiceItems.reduce((s, it) => s + ((it.unitPrice || 0) * (it.qty || it.quantityStrips || 1)), 0);
-    const gstTotal = invoiceItems.reduce((s, it) => s + ((it.qty || it.quantityStrips || 1) * (it.unitPrice || 0) * ((it.gstPercent ?? it.gst ?? 0) / 100)), 0);
+    // calculate totals using effective price based on unit type with per-item discounts
+    const subtotal = invoiceItems.reduce((s, it) => {
+      const qty = it.qty || it.quantityStrips || 1;
+      const price = getEffectivePrice(it);
+      const itemDiscount = (it.discountPercentage || 0) / 100;
+      return s + (qty * price * (1 - itemDiscount));
+    }, 0);
+    const gstTotal = invoiceItems.reduce((s, it) => {
+      const qty = it.qty || it.quantityStrips || 1;
+      const price = getEffectivePrice(it);
+      const itemDiscount = (it.discountPercentage || 0) / 100;
+      const discountedPrice = price * (1 - itemDiscount);
+      return s + (qty * discountedPrice * ((it.gstPercent ?? it.gst ?? 0) / 100));
+    }, 0);
     const rawTotal = subtotal - (discount || 0) + gstTotal;
     const roundOff = Math.round(rawTotal) - rawTotal;
     const grandTotal = parseFloat((rawTotal + roundOff).toFixed(2));
 
     const payload = {
       ...formData,
-      items: invoiceItems.map((it) => ({
-        itemId: it.itemId || it._id || null,
-        name: it.name || it.title || (it.itemId && it.itemId.name),
-        manufacturer: it.manufacturer || it.mfg || (it.itemId && it.itemId.manufacturer),
-        quantityStrips: it.qty || it.quantityStrips || 1,
-        unitPrice: it.unitPrice,
-        gstPercent: it.gstPercent ?? it.gst ?? 0,
-        gstAmount: ((it.qty || it.quantityStrips || 1) * (it.unitPrice || 0) * ((it.gstPercent ?? it.gst ?? 0) / 100)),
-        lineTotal: ((it.qty || it.quantityStrips || 1) * (it.unitPrice || 0)) + ((it.qty || it.quantityStrips || 1) * (it.unitPrice || 0) * ((it.gstPercent ?? it.gst ?? 0) / 100)),
-        pack: it.pack || (it.itemId && it.itemId.pack),
-        hsn: it.hsn || (it.itemId && it.itemId.hsn),
-        batch: it.batch,
-        expiry: it.expiry || it.exp,
-      })),
+      items: invoiceItems.map((it) => {
+        const qty = it.qty || it.quantityStrips || 1;
+        const effectivePrice = getEffectivePrice(it);
+        const discPerc = it.discountPercentage || 0;
+        const discountedPrice = effectivePrice * (1 - discPerc / 100);
+        const gstPerc = it.gstPercent ?? it.gst ?? 0;
+        const gstAmount = qty * discountedPrice * (gstPerc / 100);
+        const lineTotal = (qty * discountedPrice) + gstAmount;
+        return {
+          itemId: it.itemId || it._id || null,
+          name: it.name || it.title || (it.itemId && it.itemId.name),
+          manufacturer: it.manufacturer || it.mfg || (it.itemId && it.itemId.manufacturer),
+          quantity: qty,
+          unitType: it.unitType || 'strip',
+          quantityStrips: qty,
+          unitPrice: discountedPrice,
+          stripPrice: it.unitPrice,
+          tabletsPerStrip: it.tabletsPerStrip || 1,
+          stripsPerBox: it.stripsPerBox || 1,
+          discountPercentage: discPerc,
+          gstPercent: gstPerc,
+          gstAmount,
+          lineTotal,
+          pack: it.pack || (it.itemId && it.itemId.pack),
+          hsn: it.hsn || (it.itemId && it.itemId.hsn),
+          batch: it.batch,
+          expiry: it.expiry || it.exp,
+        };
+      }),
       subtotal,
       discountAmount: discount || 0,
       taxAmount: gstTotal,
@@ -141,7 +168,7 @@ export function InvoiceGeneration() {
 
       if (!response.ok) throw new Error('Failed to create invoice');
       setShowModal(false);
-      setFormData({ customerName: '', customerEmail: '', customerPhone: '', totalAmount: 0, paymentStatus: 'unpaid' });
+      setFormData({ customerName: '', customerEmail: '', customerPhone: '', totalAmount: 0, paymentStatus: 'unpaid', paymentMethod: 'Cash' });
       setInvoiceItems([]);
       setDiscount(0);
       fetchInvoices();
@@ -183,6 +210,7 @@ export function InvoiceGeneration() {
         name: it.name || it.title,
         manufacturer: it.brand || it.manufacturer || it.manufacturerShort || '',
         qty: 1,
+        unitType: 'strip', // Default unit type: tablets, strips, or boxes
         unitPrice: it.sellingPrice ?? it.price ?? it.mrp ?? 0,
         gstPercent: it.gst ?? 5,
         pack: it.pack,
@@ -190,6 +218,8 @@ export function InvoiceGeneration() {
         batch: batch?.batchNumber || it.batchNumber || it.batch || it.defaultBatch || '',
         expiry: expiry || (it.expirationDate ? (it.expirationDate.split ? it.expirationDate.split('T')[0] : it.expirationDate) : (it.defaultExpiry || '')),
         batchId: batch?._id || null,
+        tabletsPerStrip: it.tabletsPerStrip || 1,
+        stripsPerBox: it.stripsPerBox || 1,
       };
       setInvoiceItems((s) => [...s, newItem]);
     } catch (error) {
@@ -202,12 +232,15 @@ export function InvoiceGeneration() {
           name: it.name || it.title,
           manufacturer: it.brand || it.manufacturer || it.manufacturerShort || '',
           qty: 1,
+          unitType: 'strip',
           unitPrice: it.sellingPrice ?? it.price ?? it.mrp ?? 0,
           gstPercent: it.gst ?? 5,
           pack: it.pack,
           hsn: it.hsn,
           batch: it.batchNumber || it.batch || it.defaultBatch || '',
           expiry: it.expirationDate ? (it.expirationDate.split ? it.expirationDate.split('T')[0] : it.expirationDate) : (it.defaultExpiry || ''),
+          tabletsPerStrip: it.tabletsPerStrip || 1,
+          stripsPerBox: it.stripsPerBox || 1,
         };
         setInvoiceItems((s) => [...s, newItem]);
       }
@@ -279,8 +312,51 @@ export function InvoiceGeneration() {
 
   const removeItem = (index: number) => setInvoiceItems((s) => s.filter((_, i) => i !== index));
 
-  const subtotalCalc = invoiceItems.reduce((s, it) => s + ((it.unitPrice || 0) * (it.qty || it.quantityStrips || 0)), 0);
-  const gstCalc = invoiceItems.reduce((s, it) => s + (((it.qty || it.quantityStrips || 0) * (it.unitPrice || 0) * ((it.gstPercent ?? it.gst ?? 0) / 100))), 0);
+  // Calculate price per unit based on unit type
+  // For form items: unitPrice is strip price, calculate based on unitType
+  // For saved items: unitPrice is already calculated, stripPrice has original strip price
+  const getEffectivePrice = (item: any) => {
+    // If this is a saved invoice item, stripPrice has the original strip price
+    const basePrice = item.stripPrice || item.unitPrice || 0;
+    const tabletsPerStrip = item.tabletsPerStrip || 1;
+    const stripsPerBox = item.stripsPerBox || 1;
+
+    if (item.unitType === 'tablet') {
+      return basePrice / tabletsPerStrip;
+    } else if (item.unitType === 'box') {
+      return basePrice * stripsPerBox;
+    }
+    // Default to strip
+    return basePrice;
+  };
+
+  // Calculate subtotal with per-item discounts applied
+  const subtotalCalc = invoiceItems.reduce((s, it) => {
+    const qty = it.qty || it.quantityStrips || 0;
+    const price = getEffectivePrice(it);
+    const itemDiscount = (it.discountPercentage || 0) / 100;
+    const subtotal = qty * price * (1 - itemDiscount);
+    return s + subtotal;
+  }, 0);
+  
+  // Calculate GST on discounted price
+  const gstCalc = invoiceItems.reduce((s, it) => {
+    const qty = it.qty || it.quantityStrips || 0;
+    const price = getEffectivePrice(it);
+    const itemDiscount = (it.discountPercentage || 0) / 100;
+    const discountedPrice = price * (1 - itemDiscount);
+    const gst = qty * discountedPrice * ((it.gstPercent ?? it.gst ?? 0) / 100);
+    return s + gst;
+  }, 0);
+  
+  // Calculate total line item discounts
+  const totalItemDiscounts = invoiceItems.reduce((s, it) => {
+    const qty = it.qty || it.quantityStrips || 0;
+    const price = getEffectivePrice(it);
+    const itemDiscount = (it.discountPercentage || 0) / 100;
+    return s + (qty * price * itemDiscount);
+  }, 0);
+  
   const rawTotalCalc = subtotalCalc - (discount || 0) + gstCalc;
   const roundOffCalc = Math.round(rawTotalCalc) - rawTotalCalc;
   const grandTotalCalc = parseFloat((rawTotalCalc + roundOffCalc).toFixed(2));
@@ -422,42 +498,44 @@ export function InvoiceGeneration() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left">
-                      <th className="px-2">#</th>
-                      <th className="px-2">Name</th>
-                      <th className="px-2">Pack</th>
-                      <th className="px-2">HSN</th>
-                      <th className="px-2">Batch</th>
-                      <th className="px-2">EXP</th>
-                      <th className="px-2">QTY</th>
-                      <th className="px-2">MRP</th>
-                      <th className="px-2">GST%</th>
-                      <th className="px-2">GST Amt</th>
-                      <th className="px-2">Amount</th>
-                      <th className="px-2"> </th>
+                    <tr className="text-left text-xs">
+                      <th className="px-1 py-1">#</th>
+                      <th className="px-1 py-1">Name</th>
+                      <th className="px-1 py-1">Unit</th>
+                      <th className="px-1 py-1">QTY</th>
+                      <th className="px-1 py-1">MRP</th>
+                      <th className="px-1 py-1">Disc%</th>
+                      <th className="px-1 py-1">GST%</th>
+                      <th className="px-1 py-1">Amount</th>
+                      <th className="px-1 py-1"> </th>
                     </tr>
                   </thead>
                   <tbody>
                     {invoiceItems.map((it, idx) => {
                       const qty = it.qty || it.quantityStrips || 0;
-                      const unit = it.unitPrice || 0;
+                      const effectivePrice = getEffectivePrice(it);
+                      const discPerc = it.discountPercentage || 0;
+                      const discountedPrice = effectivePrice * (1 - discPerc / 100);
                       const gstPerc = it.gstPercent ?? it.gst ?? 0;
-                      const gstAmt = (qty * unit * (gstPerc/100));
-                      const lineAmount = (qty * unit) + gstAmt;
+                      const gstAmt = (qty * discountedPrice * (gstPerc/100));
+                      const lineAmount = (qty * discountedPrice) + gstAmt;
                       return (
-                          <tr key={idx} className="border-t">
-                          <td className="px-2 py-2">{idx+1}</td>
-                            <td className="px-2 py-2">{it.name}</td>
-                            <td className="px-2 py-2">{it.pack || '-'}</td>
-                            <td className="px-2 py-2"><input value={it.hsn||''} onChange={(e)=>updateItem(idx,{hsn:e.target.value})} className="w-24 px-1 border" /></td>
-                          <td className="px-2 py-2"><input value={it.batch||''} onChange={(e)=>updateItem(idx,{batch:e.target.value})} className="w-24 px-1 border" /></td>
-                          <td className="px-2 py-2"><input value={it.expiry||it.exp||''} onChange={(e)=>updateItem(idx,{expiry:e.target.value})} className="w-24 px-1 border" /></td>
-                          <td className="px-2 py-2"><input type="number" min={1} value={qty} onChange={(e)=>updateItem(idx,{qty: parseInt(e.target.value||'0',10)})} className="w-16 px-1 border text-right" /></td>
-                          <td className="px-2 py-2"><input type="number" step="0.01" value={unit} onChange={(e)=>updateItem(idx,{unitPrice: parseFloat(e.target.value||'0')})} className="w-20 px-1 border text-right" /></td>
-                          <td className="px-2 py-2"><input type="number" step="0.01" value={gstPerc} onChange={(e)=>updateItem(idx,{gstPercent: parseFloat(e.target.value||'0')})} className="w-16 px-1 border text-right" /></td>
-                          <td className="px-2 py-2 text-right">{gstAmt.toFixed(2)}</td>
-                          <td className="px-2 py-2 text-right">{lineAmount.toFixed(2)}</td>
-                          <td className="px-2 py-2"><button type="button" onClick={()=>removeItem(idx)} className="text-red-600">Remove</button></td>
+                          <tr key={idx} className="border-t text-xs">
+                          <td className="px-1 py-1">{idx+1}</td>
+                            <td className="px-1 py-1 text-left">{it.name}</td>
+                            <td className="px-1 py-1">
+                              <select value={it.unitType || 'strip'} onChange={(e)=>updateItem(idx,{unitType: e.target.value})} className="w-16 px-1 py-0 border rounded text-xs">
+                                <option value="tablet">Tab</option>
+                                <option value="strip">Strip</option>
+                                <option value="box">Box</option>
+                              </select>
+                            </td>
+                          <td className="px-1 py-1"><input type="number" min={1} value={qty} onChange={(e)=>updateItem(idx,{qty: parseInt(e.target.value||'0',10)})} className="w-12 px-1 border text-right text-xs" /></td>
+                          <td className="px-1 py-1 text-right">{effectivePrice.toFixed(2)}</td>
+                          <td className="px-1 py-1"><input type="number" step="0.1" min="0" max="100" value={discPerc} onChange={(e)=>updateItem(idx,{discountPercentage: parseFloat(e.target.value||'0')})} className="w-12 px-1 border text-right text-xs" /></td>
+                          <td className="px-1 py-1"><input type="number" step="0.01" value={gstPerc} onChange={(e)=>updateItem(idx,{gstPercent: parseFloat(e.target.value||'0')})} className="w-12 px-1 border text-right text-xs" /></td>
+                          <td className="px-1 py-1 text-right">{lineAmount.toFixed(2)}</td>
+                          <td className="px-1 py-1"><button type="button" onClick={()=>removeItem(idx)} className="text-red-600 text-xs">×</button></td>
                         </tr>
                       )
                     })}
@@ -468,16 +546,28 @@ export function InvoiceGeneration() {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm">Discount:</label>
-                  <input type="number" step="0.01" value={discount} onChange={(e)=>setDiscount(parseFloat(e.target.value||'0'))} className="w-32 px-2 py-1 border rounded" />
+              <div className="space-y-3 border-t border-white/20 pt-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 flex-1">
+                    <label className="text-sm font-medium">Discount:</label>
+                    <input type="number" step="0.01" value={discount} onChange={(e)=>setDiscount(parseFloat(e.target.value||'0'))} className="w-32 px-2 py-1 border rounded" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">Payment Method:</label>
+                    <select value={formData.paymentMethod || 'Cash'} onChange={(e) => setFormData({...formData, paymentMethod: e.target.value as any})} className="px-2 py-1 border rounded bg-white">
+                      <option value="Cash">Cash</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Card">Card</option>
+                    </select>
+                  </div>
                 </div>
-                <div style={{width:300}}>
-                  <div className="flex justify-between"><div>Sub Total</div><div>{currencySymbol}{subtotalCalc.toFixed(2)}</div></div>
-                  <div className="flex justify-between"><div>GST</div><div>{currencySymbol}{gstCalc.toFixed(2)}</div></div>
-                  <div className="flex justify-between"><div>Round Off</div><div>{currencySymbol}{roundOffCalc.toFixed(2)}</div></div>
-                  <div className="flex justify-between font-semibold text-lg mt-2"><div>Grand Total</div><div>{currencySymbol}{grandTotalCalc.toFixed(2)}</div></div>
+                <div style={{width:'100%', marginTop: '8px'}}>
+                  <div className="flex justify-between text-sm"><div>Sub Total</div><div>{currencySymbol}{subtotalCalc.toFixed(2)}</div></div>
+                  <div className="flex justify-between text-sm"><div>Line Item Discounts</div><div className="text-green-600">-{currencySymbol}{totalItemDiscounts.toFixed(2)}</div></div>
+                  <div className="flex justify-between text-sm"><div>Promo Discount</div><div className="text-green-600">-{currencySymbol}{(discount || 0).toFixed(2)}</div></div>
+                  <div className="flex justify-between text-sm"><div>GST</div><div>{currencySymbol}{gstCalc.toFixed(2)}</div></div>
+                  <div className="flex justify-between text-sm"><div>Round Off</div><div>{currencySymbol}{roundOffCalc.toFixed(2)}</div></div>
+                  <div className="flex justify-between font-bold text-lg mt-2"><div>Grand Total</div><div>{currencySymbol}{grandTotalCalc.toFixed(2)}</div></div>
                 </div>
               </div>
 
@@ -513,7 +603,7 @@ export function InvoiceGeneration() {
 
             <div className="p-6 printable-area" ref={invoiceContentRef} style={{background: 'white'}}>
               <style>{`
-                @page { size: A4 portrait; margin: 10mm; }
+                @page { size: A4 landscape; margin: 8mm; }
                 @media print {
                   /* Hide everything except printable area */
                   body * { visibility: hidden !important; }
@@ -521,84 +611,89 @@ export function InvoiceGeneration() {
                   .printable-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
 
                   /* Prevent table rows splitting across pages */
-                  table { page-break-inside: auto !important; }
+                  table { page-break-inside: auto !important; width: 100% !important; }
                   tr    { page-break-inside: avoid !important; page-break-after: auto !important; }
                   thead { display: table-header-group !important; }
                   tfoot { display: table-footer-group !important; }
 
-                  /* Reduce padding/spacing to help fit on single page when possible */
-                  .printable-area { font-size: 12px; }
-                  .invoice-table th, .invoice-table td { padding: 4px 6px; border: 1px solid #ddd; }
+                  /* Compact print styles */
+                  .printable-area { font-size: 10px; padding: 4mm !important; }
+                  .invoice-table { font-size: 9px; }
+                  .invoice-table th, .invoice-table td { padding: 2px 3px !important; border: 0.5px solid #999; }
+                  .invoice-table th { background: #f0f0f0; }
+                  .header-section { margin-bottom: 6px !important; }
                 }
                 /* default on-screen styles */
-                .invoice-table th, .invoice-table td { padding: 6px 8px; border: 1px solid #ddd; }
+                .invoice-table th, .invoice-table td { padding: 6px 8px; border: 1px solid #ddd; font-size: 11px; }
+                .invoice-table { width: 100%; font-size: 11px; }
               `}</style>
 
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between header-section" style={{fontSize: '11px'}}>
                 <div style={{flex: 1}}>
-                  <input type="text" value={storeInfo.name} onChange={(e)=>setStoreInfo({...storeInfo, name: e.target.value})} className="text-xl font-bold border-b mb-1" />
-                  <div className="text-sm text-gray-700">GST: <input value={storeInfo.gst} onChange={(e)=>setStoreInfo({...storeInfo, gst: e.target.value})} className="border-b" /></div>
-                  <div className="text-sm text-gray-700">FSSAI: <input value={storeInfo.fssai} onChange={(e)=>setStoreInfo({...storeInfo, fssai: e.target.value})} className="border-b" /></div>
+                  <input type="text" value={storeInfo.name} onChange={(e)=>setStoreInfo({...storeInfo, name: e.target.value})} className="text-lg font-bold border-b mb-1" />
+                  <div className="text-xs text-gray-700">GST: <input value={storeInfo.gst} onChange={(e)=>setStoreInfo({...storeInfo, gst: e.target.value})} className="border-b text-xs" style={{maxWidth: '100px'}} /></div>
+                  <div className="text-xs text-gray-700">FSSAI: <input value={storeInfo.fssai} onChange={(e)=>setStoreInfo({...storeInfo, fssai: e.target.value})} className="border-b text-xs" style={{maxWidth: '100px'}} /></div>
                 </div>
                 <div style={{flex:1,textAlign:'center'}}>
-                  <div className="text-lg font-semibold">GST INVOICE</div>
+                  <div className="font-bold" style={{fontSize: '12px'}}>GST INVOICE</div>
                 </div>
-                <div style={{flex:1,textAlign:'right'}}>
-                  <div>Invoice No: {selectedInvoice.invoiceNumber || '-'}</div>
-                  <div>Patient: {selectedInvoice.customerName || '-'}</div>
-                  <div>Date: {new Date(selectedInvoice.invoiceDate || selectedInvoice.createdAt || Date.now()).toLocaleDateString()}</div>
-                  <div>Time: {new Date(selectedInvoice.invoiceDate || selectedInvoice.createdAt || Date.now()).toLocaleTimeString()}</div>
+                <div style={{flex:1,textAlign:'right', fontSize: '10px'}}>
+                  <div><strong>Invoice:</strong> {selectedInvoice.invoiceNumber || '-'}</div>
+                  <div><strong>Patient:</strong> {selectedInvoice.customerName || '-'}</div>
+                  <div><strong>Date:</strong> {new Date(selectedInvoice.invoiceDate || selectedInvoice.createdAt || Date.now()).toLocaleDateString()}</div>
+                  <div><strong>Time:</strong> {new Date(selectedInvoice.invoiceDate || selectedInvoice.createdAt || Date.now()).toLocaleTimeString()}</div>
                 </div>
               </div>
 
-              <div className="mt-4">
-                <table className="w-full invoice-table border-collapse" style={{borderCollapse:'collapse'}}>
+              <div className="mt-2">
+                <table className="w-full invoice-table border-collapse" style={{borderCollapse:'collapse', fontSize: '10px'}}>
                   <thead>
-                    <tr>
-                      <th style={{width:'40px'}}>S.N.</th>
-                      <th>MFG</th>
-                      <th>Medicine</th>
-                      <th>Pack</th>
-                      <th>HSN</th>
-                      <th>Batch</th>
-                      <th>EXP</th>
-                      <th>QTY</th>
-                      <th>MRP</th>
-                      <th>GST% (Incl)</th>
-                      <th>GST Amt</th>
-                      <th>Amount</th>
+                    <tr style={{backgroundColor: '#f0f0f0'}}>
+                      <th style={{width:'30px', padding: '3px'}}>S.N.</th>
+                      <th style={{width:'80px', padding: '3px'}}>Medicine</th>
+                      <th style={{width:'50px', padding: '3px'}}>Pack</th>
+                      <th style={{width:'40px', padding: '3px'}}>HSN</th>
+                      <th style={{width:'70px', padding: '3px'}}>Batch</th>
+                      <th style={{width:'60px', padding: '3px'}}>EXP</th>
+                      <th style={{width:'30px', padding: '3px'}}>QTY</th>
+                      <th style={{width:'50px', padding: '3px', textAlign: 'right'}}>MRP</th>
+                      <th style={{width:'40px', padding: '3px', textAlign: 'right'}}>GST%</th>
+                      <th style={{width:'50px', padding: '3px', textAlign: 'right'}}>GST Amt</th>
+                      <th style={{width:'60px', padding: '3px', textAlign: 'right'}}>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.isArray(selectedInvoice.items) && selectedInvoice.items.length ? selectedInvoice.items.map((it:any, idx:number) => (
-                      <tr key={idx}>
-                        <td style={{textAlign:'right'}}>{idx+1}</td>
-                        <td>{it.manufacturer || (it.itemId && it.itemId.manufacturerShort) || (it.mfg) || '-'}</td>
-                        <td>{it.name || (it.itemId && it.itemId.name) || '-'}</td>
-                        <td>{it.pack || (it.itemId && it.itemId.pack) || '-'}</td>
-                        <td>{it.hsn || (it.itemId && it.itemId.hsn) || '-'}</td>
-                        <td>{it.batch || '-'}</td>
-                        <td>{it.expiry ? new Date(it.expiry).toLocaleDateString() : (it.exp || '-')}</td>
-                        <td style={{textAlign:'right'}}>{it.quantityStrips || it.qty || 1}</td>
-                        <td style={{textAlign:'right'}}>{currencySymbol}{(it.unitPrice || it.mrp || 0).toFixed(2)}</td>
-                        <td style={{textAlign:'right'}}>{(it.gstPercent ?? it.gst ?? 0)}%</td>
-                        <td style={{textAlign:'right'}}>{currencySymbol}{((it.gstAmount ?? 0)).toFixed(2)}</td>
-                        <td style={{textAlign:'right'}}>{currencySymbol}{(it.lineTotal || it.amount || ((it.unitPrice || 0)*(it.quantityStrips||it.qty||1))).toFixed(2)}</td>
+                      <tr key={idx} style={{borderBottom: '0.5px solid #ddd'}}>
+                        <td style={{textAlign:'right', padding: '3px'}}>{idx+1}</td>
+                        <td style={{padding: '3px'}}>{it.name || (it.itemId && it.itemId.name) || '-'}</td>
+                        <td style={{padding: '3px'}}>{it.pack || (it.itemId && it.itemId.pack) || '-'}</td>
+                        <td style={{padding: '3px', textAlign: 'center'}}>{it.hsn || '-'}</td>
+                        <td style={{padding: '3px', fontSize: '9px'}}>{it.batch || '-'}</td>
+                        <td style={{padding: '3px'}}>{it.expiry ? new Date(it.expiry).toLocaleDateString() : (it.exp || '-')}</td>
+                        <td style={{textAlign:'right', padding: '3px'}}>{it.quantityStrips || it.qty || it.quantity || 1}</td>
+                        <td style={{textAlign:'right', padding: '3px'}}>{currencySymbol}{(it.unitPrice || it.mrp || 0).toFixed(2)}</td>
+                        <td style={{textAlign:'right', padding: '3px'}}>{(it.gstPercent ?? it.gst ?? 0)}%</td>
+                        <td style={{textAlign:'right', padding: '3px'}}>{currencySymbol}{((it.gstAmount ?? 0)).toFixed(2)}</td>
+                        <td style={{textAlign:'right', padding: '3px', fontWeight: 'bold'}}>{currencySymbol}{(it.lineTotal || it.amount || ((it.unitPrice || 0)*(it.quantityStrips||it.qty||it.quantity||1))).toFixed(2)}</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={12} style={{textAlign:'center',padding:12}}>No items</td></tr>
+                      <tr><td colSpan={11} style={{textAlign:'center', padding:'8px'}}>No items</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
 
-              <div className="mt-4 flex justify-end">
-                <div style={{width:300}}>
-                  <div className="flex justify-between"><div>Sub Total</div><div>{currencySymbol}{selectedSubtotal.toFixed(2)}</div></div>
-                  <div className="flex justify-between"><div>GST</div><div>{currencySymbol}{selectedTax.toFixed(2)}</div></div>
-                  <div className="flex justify-between"><div>Discount</div><div>{currencySymbol}{selectedDiscount.toFixed(2)}</div></div>
-                  <div className="flex justify-between"><div>Round Off</div><div>{currencySymbol}{selectedRoundOff.toFixed(2)}</div></div>
-                  <div className="flex justify-between font-semibold text-lg mt-2"><div>Grand Total</div><div>{currencySymbol}{selectedGrandTotal.toFixed(2)}</div></div>
+              <div className="mt-3 flex justify-end" style={{fontSize: '11px'}}>
+                <div style={{width: '280px', paddingLeft: '10px'}}>
+                  <div className="flex justify-between" style={{padding: '2px 0'}}><div><strong>Sub Total</strong></div><div>{currencySymbol}{selectedSubtotal.toFixed(2)}</div></div>
+                  <div className="flex justify-between" style={{padding: '2px 0'}}><div><strong>GST</strong></div><div>{currencySymbol}{selectedTax.toFixed(2)}</div></div>
+                  {selectedDiscount > 0 && <div className="flex justify-between" style={{padding: '2px 0'}}><div><strong>Discount</strong></div><div>-{currencySymbol}{selectedDiscount.toFixed(2)}</div></div>}
+                  <div className="flex justify-between" style={{padding: '2px 0'}}><div><strong>Round Off</strong></div><div>{currencySymbol}{selectedRoundOff.toFixed(2)}</div></div>
+                  <div className="flex justify-between font-bold" style={{padding: '4px 0', borderTop: '1px solid #000', marginTop: '4px', fontSize: '12px'}}><div>GRAND TOTAL</div><div>{currencySymbol}{selectedGrandTotal.toFixed(2)}</div></div>
+                  <div style={{marginTop: '8px', paddingTop: '8px', borderTop: '0.5px solid #999', fontSize: '10px'}}>
+                    <div className="flex justify-between"><div><strong>Payment Mode:</strong></div><div>{selectedInvoice.paymentMethod || 'Cash'}</div></div>
+                  </div>
                 </div>
               </div>
 

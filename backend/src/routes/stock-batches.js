@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import StockBatch from '../models/StockBatch.js';
 import InventoryItem from '../models/InventoryItem.js';
+import { StockCarton, StockBox } from '../models/Stock.js';
 import { authenticate } from '../middleware/auth.js';
 import { io } from '../server.js';
 import { computeStats } from '../services/statsService.js';
@@ -94,9 +95,16 @@ router.post('/', authenticate, async (req, res) => {
 
     await batch.save();
 
-    // Update inventory item with total quantity
+    // Update inventory item with total quantity - convert itemId to ObjectId for comparison
+    let itemIdObj;
+    try {
+      itemIdObj = new mongoose.Types.ObjectId(itemId);
+    } catch (e) {
+      itemIdObj = itemId;
+    }
+    
     const totalBatchQty = await StockBatch.aggregate([
-      { $match: { itemId: mongoose.Types.ObjectId(itemId), status: 'active' } },
+      { $match: { itemId: itemIdObj, status: 'active' } },
       { $group: { _id: null, total: { $sum: '$quantityAvailable' } } }
     ]);
 
@@ -137,8 +145,15 @@ router.put('/:id', authenticate, async (req, res) => {
 
     // After updating a batch, recalculate the item's total quantity from active batches
     try {
+      let itemIdObj = batch.itemId;
+      try {
+        if (typeof batch.itemId === 'string') {
+          itemIdObj = new mongoose.Types.ObjectId(batch.itemId);
+        }
+      } catch (e) {}
+      
       const totalBatchQty = await StockBatch.aggregate([
-        { $match: { itemId: batch.itemId, status: 'active' } },
+        { $match: { itemId: itemIdObj, status: 'active' } },
         { $group: { _id: null, total: { $sum: '$quantityAvailable' } } }
       ]);
 
@@ -196,10 +211,30 @@ router.delete('/:id', authenticate, async (req, res) => {
     if (!batch) {
       return res.status(404).json({ error: 'Batch not found' });
     }
-    // After deletion, recalculate total available from remaining active batches
+    // After deletion, also delete associated cartons and boxes to keep stock management clean
     try {
+      // Find cartons related to this item that may be orphaned
+      const cartons = await StockCarton.find({ itemId: batch.itemId });
+      for (const carton of cartons) {
+        await StockBox.deleteMany({ cartonId: carton._id });
+      }
+      // Note: We keep cartons as they may be linked to multiple batches or invoices
+      // Instead just mark stock as clean by recalculating quantities
+    } catch (e) {
+      console.warn('Failed to clean up cartons on batch delete', e);
+    }
+    
+    // Recalculate total available from remaining active batches
+    try {
+      let itemIdObj = batch.itemId;
+      try {
+        if (typeof batch.itemId === 'string') {
+          itemIdObj = new mongoose.Types.ObjectId(batch.itemId);
+        }
+      } catch (e) {}
+      
       const totalBatchQty = await StockBatch.aggregate([
-        { $match: { itemId: batch.itemId, status: 'active' } },
+        { $match: { itemId: itemIdObj, status: 'active' } },
         { $group: { _id: null, total: { $sum: '$quantityAvailable' } } }
       ]);
 

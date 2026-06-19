@@ -105,7 +105,7 @@ export function AddStockModal({
       const autoBatchNumber = `B-${itemId}-${Date.now()}`;
       const costPerUnit = quickData.purchasePrice > 0 ? quickData.purchasePrice / totalStrips : 0;
 
-      await fetch(`${API_URL}/stock-batches`, {
+      const batchRes = await fetch(`${API_URL}/stock-batches`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -118,6 +118,11 @@ export function AddStockModal({
           location: itemLocation,
         }),
       });
+
+      if (!batchRes.ok) throw new Error('Failed to create batch');
+
+      // Wait 500ms for backend to complete currentQuantity aggregation
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       onSuccess();
       alert(`✅ Created ${quickData.numberOfCartoons} carton(s) with ${totalStrips} strips + Auto-batch created`);
@@ -174,7 +179,7 @@ export function AddStockModal({
       const avgPrice = detailedData.boxes.reduce((sum, b) => sum + b.purchasePrice, 0) / detailedData.boxes.length;
       const costPerUnit = avgPrice > 0 ? avgPrice / totalStrips : 0;
 
-      await fetch(`${API_URL}/stock-batches`, {
+      const batchRes = await fetch(`${API_URL}/stock-batches`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -187,6 +192,11 @@ export function AddStockModal({
           location: itemLocation,
         }),
       });
+
+      if (!batchRes.ok) throw new Error('Failed to create batch');
+
+      // Wait 500ms for backend to complete currentQuantity aggregation
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       onSuccess();
       alert(`✅ Carton "${detailedData.cartonNumber}" created with ${totalStrips} strips + Auto-batch created`);
