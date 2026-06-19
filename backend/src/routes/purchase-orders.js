@@ -58,16 +58,21 @@ router.post('/', authenticate, requirePermission('manage_orders'), async (req, r
 
     const order = new PurchaseOrder(orderData);
     await order.save();
-    await order.populate('supplierId').populate('items.itemId');
+
+    // Send response immediately (don't attempt to chain .populate() on the document)
     res.status(201).json(order);
-    try {
-      if (io) {
-        const stats = await computeStats();
-        io.emit('stats:update', stats);
+
+    // Compute stats and emit asynchronously to avoid impacting the HTTP response
+    setImmediate(async () => {
+      try {
+        if (io) {
+          const stats = await computeStats();
+          io.emit('stats:update', stats);
+        }
+      } catch (e) {
+        console.warn('Failed to emit stats:update after order create (async):', e);
       }
-    } catch (e) {
-      console.warn('Failed to emit stats:update after order create', e);
-    }
+    });
   } catch (err) {
     // Send validation, cast and duplicate key errors with clearer messages
     if (err.name === 'ValidationError' || err.name === 'CastError') {
