@@ -14,9 +14,12 @@ interface InventoryItem {
   sku: string;
   name: string;
   category: string;
+  supplier?: string;
   currentQuantity: number;
   unitCost: number;
   sellingPrice: number;
+  tabletsPerStrip?: number;
+  stripsPerBox?: number;
   requiresPrescription: boolean;
   expirationDate?: string;
   description?: string;
@@ -49,7 +52,7 @@ interface StockBox {
 }
 
 export function InventoryManagement() {
-  const { token, hasPermission, hasRole, user } = useAuth();
+  const { token, hasPermission, user } = useAuth();
   const { currencySymbol } = useSettings();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -82,7 +85,7 @@ export function InventoryManagement() {
     stripsPerBox: 1,
     requiresPrescription: false,
     expirationDate: '',
-    status: 'active' as const,
+    status: 'active' as 'active' | 'inactive',
     discountTierId: '',
   });
 
@@ -291,50 +294,50 @@ export function InventoryManagement() {
     }
   };
 
-  const handleAddCarton = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedItemId || !cartonData.numberOfCartoons || !cartonData.numberOfBoxesPerCarton || !cartonData.stripsPerBox) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    try {
-      const batchData = {
-        numberOfCartoons: parseInt(cartonData.numberOfCartoons.toString()),
-        numberOfBoxesPerCarton: parseInt(cartonData.numberOfBoxesPerCarton.toString()),
-        stripsPerBox: parseInt(cartonData.stripsPerBox.toString()),
-        purchasePrice: parseFloat(cartonData.purchasePrice.toString()),
-        receivedDate: new Date().toISOString().split('T')[0],
-        expirationDate: cartonData.expirationDate || undefined,
-      };
-
-      const response = await fetch(`${API_URL}/inventory/${selectedItemId}/cartons/batch`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(batchData),
-      });
-
-      if (!response.ok) throw new Error('Failed to create cartoons');
-      const result = await response.json();
-
-      alert(`${result.totalBoxes} boxes created across ${result.message.split('Created ')[1].split(' carton')[0]} cartons (${result.totalStrips} total strips)`);
-      setShowCartonModal(false);
-      setCartonData({
-        numberOfCartoons: 1,
-        numberOfBoxesPerCarton: 1,
-        stripsPerBox: 0,
-        purchasePrice: 0,
-        expirationDate: '',
-      });
-      setSelectedItemId(null);
-      fetchItems();
-      if (selectedItemId) fetchCartons(selectedItemId);
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error creating cartons: ' + (error as Error).message);
-    }
-  };
+  // const handleAddCarton = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //
+  //   if (!selectedItemId || !cartonData.numberOfCartoons || !cartonData.numberOfBoxesPerCarton || !cartonData.stripsPerBox) {
+  //     alert('Please fill in all required fields');
+  //     return;
+  //   }
+  //
+  //   try {
+  //     const batchData = {
+  //       numberOfCartoons: parseInt(cartonData.numberOfCartoons.toString()),
+  //       numberOfBoxesPerCarton: parseInt(cartonData.numberOfBoxesPerCarton.toString()),
+  //       stripsPerBox: parseInt(cartonData.stripsPerBox.toString()),
+  //       purchasePrice: parseFloat(cartonData.purchasePrice.toString()),
+  //       receivedDate: new Date().toISOString().split('T')[0],
+  //       expirationDate: cartonData.expirationDate || undefined,
+  //     };
+  //
+  //     const response = await fetch(`${API_URL}/inventory/${selectedItemId}/cartons/batch`, {
+  //       method: 'POST',
+  //       headers,
+  //       body: JSON.stringify(batchData),
+  //     });
+  //
+  //     if (!response.ok) throw new Error('Failed to create cartoons');
+  //     const result = await response.json();
+  //
+  //     alert(`${result.totalBoxes} boxes created across ${result.message.split('Created ')[1].split(' carton')[0]} cartons (${result.totalStrips} total strips)`);
+  //     setShowCartonModal(false);
+  //     setCartonData({
+  //       numberOfCartoons: 1,
+  //       numberOfBoxesPerCarton: 1,
+  //       stripsPerBox: 0,
+  //       purchasePrice: 0,
+  //       expirationDate: '',
+  //     });
+  //     setSelectedItemId(null);
+  //     fetchItems();
+  //     if (selectedItemId) fetchCartons(selectedItemId);
+  //   } catch (error) {
+  //     console.error('Error:', error);
+  //     alert('Error creating cartons: ' + (error as Error).message);
+  //   }
+  // };
 
   const handleDelete = async (itemId: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
