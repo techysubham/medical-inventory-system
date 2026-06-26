@@ -29,7 +29,7 @@ export function InvoiceGeneration() {
   const [shouldDownloadPDF, setShouldDownloadPDF] = useState(false);
   const invoiceContentRef = useRef<HTMLDivElement>(null);
   const [storeInfo, setStoreInfo] = useState({
-    name: 'Your Medicine Store',
+    name: 'Siddhivinayak Medicine Store',
     gst: '',
     fssai: '',
   });
@@ -629,13 +629,19 @@ export function InvoiceGeneration() {
               `}</style>
 
               <div className="flex items-start justify-between header-section" style={{fontSize: '11px'}}>
-                <div style={{flex: 1}}>
-                  <input type="text" value={storeInfo.name} onChange={(e)=>setStoreInfo({...storeInfo, name: e.target.value})} className="text-lg font-bold border-b mb-1" />
+                <div style={{flex: 1, minWidth: 0}}>
+                  <textarea
+                    value={storeInfo.name}
+                    onChange={(e) => setStoreInfo({ ...storeInfo, name: e.target.value })}
+                    rows={2}
+                    className="text-lg font-bold border-b mb-1 w-full resize-none"
+                    style={{fontSize: '14px', lineHeight: 1.05, background: 'transparent', outline: 'none'}}
+                  />
                   <div className="text-xs text-gray-700">GST: <input value={storeInfo.gst} onChange={(e)=>setStoreInfo({...storeInfo, gst: e.target.value})} className="border-b text-xs" style={{maxWidth: '100px'}} /></div>
                   <div className="text-xs text-gray-700">FSSAI: <input value={storeInfo.fssai} onChange={(e)=>setStoreInfo({...storeInfo, fssai: e.target.value})} className="border-b text-xs" style={{maxWidth: '100px'}} /></div>
                 </div>
                 <div style={{flex:1,textAlign:'center'}}>
-                  <div className="font-bold" style={{fontSize: '12px'}}>GST INVOICE</div>
+                  <div className="font-bold" style={{fontSize: '12px'}}>Cash Memo</div>
                 </div>
                 <div style={{flex:1,textAlign:'right', fontSize: '10px'}}>
                   <div><strong>Invoice:</strong> {selectedInvoice.invoiceNumber || '-'}</div>
