@@ -38,7 +38,7 @@ export let io = null;
 function setupSocketIO() {
   io = new IOServer(httpServer, {
     cors: {
-      origin: [process.env.FRONTEND_URL || 'http://localhost:5173'],
+      origin: ['https://thewhitecrown.in', 'https://www.thewhitecrown.in', 'http://localhost:5173'],
       methods: ['GET', 'POST'],
       credentials: true,
     },
