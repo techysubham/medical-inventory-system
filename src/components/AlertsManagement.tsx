@@ -1,10 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
+import { useAlerts } from '../contexts/AlertsContext';
 import { AlertTriangle, CheckCircle, Clock, X } from 'lucide-react';
 
-const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const normalizedBase = rawApi.replace(/\/+$/g, '');
-const API_URL = normalizedBase.endsWith('/api') ? normalizedBase : normalizedBase + '/api';
 
 interface Alert {
   _id: string;
@@ -17,50 +14,9 @@ interface Alert {
 }
 
 export function AlertsManagement() {
-  const { token } = useAuth();
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { alerts, deleteAlert: removeAlert } = useAlerts();
+  const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState<string>('all');
-
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-
-  useEffect(() => {
-    if (token) {
-      fetchAlerts();
-      // Refresh alerts every 30 seconds
-      const interval = setInterval(fetchAlerts, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [token]);
-
-  const fetchAlerts = async () => {
-    try {
-      const response = await fetch(`${API_URL}/alerts`, { headers });
-      if (!response.ok) throw new Error('Failed to fetch alerts');
-      const data = await response.json();
-      setAlerts(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteAlert = async (id: string) => {
-    try {
-      const response = await fetch(`${API_URL}/alerts/${id}`, { 
-        method: 'DELETE', 
-        headers 
-      });
-      if (!response.ok) throw new Error('Failed to delete alert');
-      setAlerts(alerts.filter(a => a._id !== id));
-    } catch (error) {
-      alert('Error: ' + (error as Error).message);
-    }
-  };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -86,9 +42,7 @@ export function AlertsManagement() {
 
   if (loading) return <div className="p-8 text-center">Loading alerts...</div>;
 
-  const filteredAlerts = filterType === 'all' 
-    ? alerts 
-    : alerts.filter(a => a.type === filterType);
+  const filteredAlerts = filterType === 'all' ? alerts : alerts.filter((a) => a.type === filterType);
 
   return (
     <div className="space-y-6">
@@ -153,18 +107,17 @@ export function AlertsManagement() {
               <div className="flex-1">
                 <h3 className="font-bold text-lg text-gray-900">{alert.title}</h3>
                 <p className="text-sm text-gray-700 mt-2">{alert.message}</p>
-                <div className="flex items-center gap-4 mt-3">
-                  <p className="text-xs text-gray-500 font-medium">{alert.createdAt?.split('T')[0]}</p>
-                  <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-glossy-sm ${
-                    alert.status === 'read' ? 'bg-gray-200 text-gray-600 opacity-60' : 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white'
-                  }`}>
-                    {alert.status === 'read' ? '✓ Read' : '🔔 New'}
-                  </span>
-                </div>
+                <p className="text-xs text-gray-500 font-medium mt-3">{alert.createdAt?.split('T')[0]}</p>
               </div>
             </div>
             <button
-              onClick={() => deleteAlert(alert._id)}
+              onClick={async () => {
+                try {
+                  await removeAlert(alert._id);
+                } catch (err) {
+                  console.error('Error deleting alert:', err);
+                }
+              }}
               className="ml-4 p-2.5 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-lg transition-all duration-300 hover:scale-110"
               title="Dismiss alert"
             >

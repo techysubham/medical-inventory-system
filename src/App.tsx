@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { AlertsProvider } from './contexts/AlertsContext';
 import { Auth } from './components/Auth';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
@@ -74,7 +75,9 @@ function App() {
   return (
     <AuthProvider>
       <SettingsProvider>
-        <AppContent />
+        <AlertsProvider>
+          <AppContent />
+        </AlertsProvider>
       </SettingsProvider>
     </AuthProvider>
   );

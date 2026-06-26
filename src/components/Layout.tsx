@@ -1,5 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useAlerts } from '../contexts/AlertsContext';
 import {
   LayoutDashboard,
   Package,
@@ -27,6 +28,7 @@ interface LayoutProps {
 export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const { signOut, user, hasPermission } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { unreadCount } = useAlerts();
 
   const allNavigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, permission: null },
@@ -118,7 +120,12 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
                 }`}
               >
                 <item.icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${currentPage === item.id ? 'text-white' : ''}`} />
-                <span>{item.name}</span>
+                  <span className="truncate">{item.name}</span>
+                  {item.id === 'alerts' && unreadCount > 0 && (
+                    <span className={`ml-auto inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full ${currentPage === item.id ? 'bg-white text-blue-600' : 'bg-red-500 text-white'}`}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
               </button>
             ))}
 
@@ -172,9 +179,15 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
                (currentPage === 'users' ? 'User Management' : 'Dashboard')}
             </h1>
             <div className="flex items-center gap-6">
-              <button className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-300 group">
+              <button className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-300 group" title="Alerts" onClick={() => onNavigate('alerts')}>
                 <Bell className="w-6 h-6 transition-transform group-hover:scale-110" />
-                <span className="absolute top-1 right-1 w-3 h-3 bg-gradient-to-br from-red-500 to-orange-500 rounded-full shadow-glossy-sm animate-pulse"></span>
+                {unreadCount > 0 ? (
+                  <span className="absolute top-0 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold rounded-full bg-red-500 text-white shadow-glossy-sm">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                ) : (
+                  <span className="absolute top-1 right-1 w-3 h-3 bg-gradient-to-br from-red-500 to-orange-500 rounded-full shadow-glossy-sm opacity-60"></span>
+                )}
               </button>
             </div>
           </div>
